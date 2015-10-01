@@ -5,15 +5,30 @@
 
 package server;
 
+import java.net.Socket;
 import java.util.*;
 import javax.jws.WebService;
 
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
-public class ResourceManagerImpl implements server.ws.ResourceManager {
+public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable {
     
-    protected RMHashtable m_itemHT = new RMHashtable();
+    protected RMHashtable m_itemHT;
+    protected String m_cmd;
+    protected Socket m_sock;
+
+    public ResourceManagerImpl(String cmd, RMHashtable data, Socket sock)
+    {
+    	// Create this RM with all the data required to execute the request
+    	m_cmd = cmd;
+    	m_itemHT = data;
+    	m_sock = sock;
+    }
     
+    public void run()
+    {
+    	//TODO Actually do everything
+    }
     
     // Basic operations on RMItem //
     

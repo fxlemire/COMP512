@@ -71,3 +71,7 @@ local.properties
 
 # TeXlipse plugin
 .texlipse
+
+### VARIOUS ### 
+# vim backup 
+*.*~

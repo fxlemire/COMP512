@@ -42,6 +42,24 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	m_sock = sock;
     }
     
+    private void returnFailure(String error)
+    {
+    	Exception contents = new Exception(error);
+    	RMResult result = new RMResult(contents);
+    	
+    	try
+    	{
+    		OutputStream sock_out = m_sock.getOutputStream();
+    		ObjectOutputStream out = new ObjectOutputStream(sock_out);
+    		out.writeObject(result);
+    		m_sock.close();
+    	}
+    	catch (IOException e)
+    	{
+    		Trace.error("Could not return this failure: " + error);
+    	}
+    }
+    
     public void run()
     {
     	// Read input from socket
@@ -55,7 +73,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	}
     	catch (IOException e)
     	{
-    		// TODO log failure and die
+    		Trace.error("Could not obtain command.");
     		return;
     	}
     	
@@ -112,10 +130,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     				}
     				else
     				{
-    					// TODO What should we do here?
-    					// We don't support other param types, so
-    					// either error out, or keep searching for
-    					// a suitable method? Assert?
+    					throw new AssertionError("Unsupported method parameter type");
     				}
     			}
     			
@@ -129,19 +144,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     		}
     	}
     	
-    	// If we didn't find the method we needed, output 
+    	// If we didn't find the method we needed, send back an error.
     	if (operation == null)
     	{
     		if (methodExists)
     		{
-    			// TODO return usage of this command
+    			returnFailure(input + " has wrong parameters.");
     		}
     		else
     		{
-    			// TODO return no such command
+    			returnFailure(cmdParts[0] + ": no such method");
     		}
-    		
-    		// TODO This will be changed
     		return;
     	}
     	
@@ -151,13 +164,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	{
     		result = operation.invoke(this, params);    		
     	}
-    	catch (InvocationTargetException e)
+    	catch (Exception e)
     	{
-    		// TODO what should happen here?
-    	}
-    	catch (IllegalAccessException e)
-    	{
-    		// TODO what should happen here?
+    		Trace.error("Could not call method " + operation.getName() + ": " + e.getMessage());
+    		returnFailure("Internal server error when executing " + input);
     	}
     	
     	if (!(result instanceof Serializable))
@@ -165,11 +175,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     		// Assertion because the programmer should return the proper thing.
     		throw new AssertionError("Result of method must be serializable");
     	}
-
+    	
     	// Send over socket
     	OutputStream sock_out = null;
     	try
     	{
+    		// The cast here should be safe since we checked that it was an instance before
+    		RMResult packagedResult = new RMResult((Serializable) result);
     		sock_out = m_sock.getOutputStream();
     		ObjectOutputStream out = new ObjectOutputStream(sock_out);
     		out.writeObject(result);
@@ -177,7 +189,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	}
     	catch (IOException e)
     	{
-    		//TODO Log and die
+    		Trace.error("Could not send result back to client.");
     	}
     }
     

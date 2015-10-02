@@ -5,29 +5,180 @@
 
 package server;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.util.*;
 import javax.jws.WebService;
 
 
-@WebService(endpointInterface = "server.ws.ResourceManager")
+//@WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable {
     
     protected RMHashtable m_itemHT;
-    protected String m_cmd;
     protected Socket m_sock;
 
-    public ResourceManagerImpl(String cmd, RMHashtable data, Socket sock)
+    public static void RunNonBlocking(RMHashtable data, Socket sock)
+    {    	
+    	// This method is here to
+    	// 1) hide the Thread from the connection logic
+    	// 2) make sure that the rmImpl is constructed properly before running it
+    	// 		(which would not happen if the thread was in the constructor)
+    	ResourceManagerImpl instance = new ResourceManagerImpl(data, sock);
+    	Thread self = new Thread(instance);
+    	self.start();
+    }
+    
+    private ResourceManagerImpl(RMHashtable data, Socket sock)
     {
-    	// Create this RM with all the data required to execute the request
-    	m_cmd = cmd;
     	m_itemHT = data;
     	m_sock = sock;
     }
     
     public void run()
     {
-    	//TODO Actually do everything
+    	// Read input from socket
+    	InputStream sock_in = null;
+    	String input = null;
+    	try
+    	{
+    		sock_in = m_sock.getInputStream();
+    		BufferedReader in = new BufferedReader(new InputStreamReader(sock_in));
+    		input = in.readLine();
+    	}
+    	catch (IOException e)
+    	{
+    		// TODO log failure and die
+    		return;
+    	}
+    	
+    	// Get command, arguments from input
+    	String[] cmdParts = input.split(",");
+    	for(int i = 0 ; i < cmdParts.length ; i++)
+    		cmdParts[i] = cmdParts[i].trim();
+    	
+    	// Get method from command and typecheck
+    	Method operation = null; // This is what we'll execute
+    	Object[] params = null; // Parameters to the method
+    	Class myClass = this.getClass();
+    	boolean methodExists = false; // For error reporting purposes
+    	
+    	// We're doing it this way by looping through the methods
+    	// so that we can have some "overloading" if we want to.
+    	// (for example reserveItinerary <flight> vs.
+    	// reserveItinerary <flight> <car> <hotel> could execute
+    	// different methods)
+    	Method[] myMethods = myClass.getMethods();
+    	for (int i = 0 ; i < myMethods.length ; i++)
+    	{
+    		if (myMethods[i].getName().equalsIgnoreCase(cmdParts[0]))
+    		{
+    			methodExists = true;
+    			Class[] paramTypes = myMethods[i].getParameterTypes();
+    			
+    			// Do the number of parameters match?
+    			if (paramTypes.length + 1 != cmdParts.length)
+    				continue;
+    			
+    			// Typecheck and collect arguments for the method
+    			Object[] candidateParams = new Object[paramTypes.length];
+    			boolean typechecks = true;
+    			
+    			for (int j = 0 ; j < paramTypes.length && typechecks ; j++) 
+    			{
+    				if (paramTypes[j].equals(String.class))
+    				{
+    					candidateParams[j] = cmdParts[j + 1];
+    				}
+    				else if (paramTypes[j].equals(int.class))
+    				{
+    					try
+    					{
+    						candidateParams[j] = Integer.parseInt(cmdParts[j + 1]);
+    					}
+    					catch (NumberFormatException e)
+    					{
+    						// Move on to next method
+    						typechecks = false;
+    						break;
+    					}
+    				}
+    				else
+    				{
+    					// TODO What should we do here?
+    					// We don't support other param types, so
+    					// either error out, or keep searching for
+    					// a suitable method? Assert?
+    				}
+    			}
+    			
+    			// If all types correspond, then we got our method and we're done.
+    			if (typechecks)
+    			{
+    				params = candidateParams;
+    				operation = myMethods[i];
+    				break;
+    			}
+    		}
+    	}
+    	
+    	// If we didn't find the method we needed, output 
+    	if (operation == null)
+    	{
+    		if (methodExists)
+    		{
+    			// TODO return usage of this command
+    		}
+    		else
+    		{
+    			// TODO return no such command
+    		}
+    		
+    		// TODO This will be changed
+    		return;
+    	}
+    	
+    	System.out.println(Arrays.toString(params));
+    	Object result = null;
+    	try
+    	{
+    		result = operation.invoke(this, params);    		
+    	}
+    	catch (InvocationTargetException e)
+    	{
+    		// TODO what should happen here?
+    	}
+    	catch (IllegalAccessException e)
+    	{
+    		// TODO what should happen here?
+    	}
+    	
+    	if (!(result instanceof Serializable))
+    	{
+    		// Assertion because the programmer should return the proper thing.
+    		throw new AssertionError("Result of method must be serializable");
+    	}
+
+    	// Send over socket
+    	OutputStream sock_out = null;
+    	try
+    	{
+    		sock_out = m_sock.getOutputStream();
+    		ObjectOutputStream out = new ObjectOutputStream(sock_out);
+    		out.writeObject(result);
+    		m_sock.close();
+    	}
+    	catch (IOException e)
+    	{
+    		//TODO Log and die
+    	}
     }
     
     // Basic operations on RMItem //

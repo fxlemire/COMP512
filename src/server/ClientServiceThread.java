@@ -43,60 +43,25 @@ public class ClientServiceThread implements Runnable {
         try {
             rmSocket = new Socket(_rmIp, _rmPort);
             outputStream = new DataOutputStream(rmSocket.getOutputStream());
+
+            String[] request = requestString.split(",");
+            Command command = Command.getCommandForInterfaceCall(request[0]);
+
+            String requestForRm = formatRequest(command, request);
+            outputStream.writeUTF(requestForRm);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
-        //TODO: send to proper RM via socket, receive response and send back response to client
-        String[] request = requestString.split(",");
+    private String formatRequest(Command command, String[] request) {
+        String requestForRm = command.getMethod();
+        short arguments = command.getArguments();
 
-        switch(Command.getCommandForInterfaceCall(request[0])) {
-            case NEW_FLIGHT:
-
-                break;
-            case NEW_CAR:
-                break;
-            case NEW_ROOM:
-                break;
-            case NEW_CUSTOMER:
-                break;
-            case NEW_CUSTOMER_ID:
-                break;
-            case DELETE_FLIGHT:
-                break;
-            case DELETE_CAR:
-                break;
-            case DELETE_ROOM:
-                break;
-            case DELETE_CUSTOMER:
-                break;
-            case QUERY_FLIGHT:
-                break;
-            case QUERY_CAR:
-                break;
-            case QUERY_ROOM:
-                break;
-            case QUERY_CUSTOMER:
-                break;
-            case QUERY_FLIGHT_PRICE:
-                break;
-            case QUERY_CAR_PRICE:
-                break;
-            case QUERY_ROOM_PRICE:
-                break;
-            case RESERVE_FLIGHT:
-                break;
-            case RESERVE_CAR:
-                break;
-            case RESERVE_ROOM:
-                break;
-            case ITINERARY:
-                break;
-            case UNKNOWN_COMMAND:
-                break;
-            default:
-                //even more unknown...
-                break;
+        for (short i = 1; i < arguments; ++i) {
+            requestForRm += "," + request[i];
         }
+
+        return requestForRm;
     }
 }

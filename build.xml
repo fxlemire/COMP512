@@ -3,7 +3,7 @@
 
     <property name="service.name" value="rm"/>
     <property name="service.host" value="localhost"/>
-    <property name="service.port" value="8080"/>
+    <property name="service.port" value="38080"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -88,7 +88,19 @@
         <antcall target="build-server"/>
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
-        <antcall target="start-tomcat"/>        
+        <!--antcall target="start-tomcat"/-->
+        <antcall target="start-RMManager"/>
+    </target>
+
+    <target name="start-RMManager">
+        <echo message="Starting RMManager... "/>
+        <java fork="true" classname="server.ws.RMManager">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.port}"/>
+        </java>
     </target>
 
     <taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">

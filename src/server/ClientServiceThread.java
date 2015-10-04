@@ -30,15 +30,22 @@ public class ClientServiceThread implements Runnable {
         try {
             DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
             String request = inputStream.readUTF();
-            processRequest(request);
+
+            String res = processRequest(request);
+
+            DataOutputStream outputStream = new DataOutputStream(_clientSocket.getOutputStream());
+            outputStream.writeUTF(res);
+            outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void processRequest(String requestString) {
+    private String processRequest(String requestString) {
         Socket rmSocket;
         DataOutputStream outputStream;
+        DataInputStream inputStream;
+        String res = "";
 
         try {
             rmSocket = new Socket(_rmIp, _rmPort);
@@ -49,9 +56,16 @@ public class ClientServiceThread implements Runnable {
 
             String requestForRm = formatRequest(command, request);
             outputStream.writeUTF(requestForRm);
+            outputStream.flush();
+
+            inputStream = new DataInputStream(rmSocket.getInputStream());
+
+            res = inputStream.readUTF();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return res;
     }
 
     private String formatRequest(Command command, String[] request) {

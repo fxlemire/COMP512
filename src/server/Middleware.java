@@ -8,14 +8,16 @@ public class Middleware {
     public static void main(String[] args) {
         Middleware middleware = new Middleware();
         int port = Integer.parseInt(args[0]);
-        middleware.start(port);
+        String rmIp = args[1];
+        int rmPort = Integer.parseInt(args[2]);
+        middleware.start(port, rmIp, rmPort);
     }
 
-    private void start(int port) {
+    private void start(int port, String rmIp, int rmPort) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
                 try (Socket clientSocket = serverSocket.accept()) {
-                    ClientServiceThread.RunNonBlocking(clientSocket);
+                    ClientServiceThread.RunNonBlocking(clientSocket, rmIp, rmPort);
                 } catch (IOException e) {
                     e.printStackTrace();
                     break;

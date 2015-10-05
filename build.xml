@@ -32,7 +32,7 @@
         <mkdir dir="${basedir}/webapps"/>
     </target>
 
-    <taskdef name="annotationProcessing" 
+    <taskdef name="annotationProcessing"
              classname="com.sun.tools.ws.ant.AnnotationProcessingTask">
         <classpath refid="jaxws.classpath"/>
     </taskdef>

@@ -568,6 +568,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
             return cust.getReservations();
         }
     }
+    
+    // Just check whether a customer exists or not.
+    public boolean checkCustomerExists(int id, int customerId) {
+    	Trace.info("RM::checkCustomerExists(" + id + ", " 
+                + customerId + ") called.");
+    	
+    	if (readData(id, Customer.getKey(customerId)) == null)
+    		return false;
+    	return true;
+    }
 
     // Return a bill.
     @Override

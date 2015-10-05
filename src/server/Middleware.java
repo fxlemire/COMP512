@@ -22,7 +22,7 @@ public class Middleware {
 
     public static void main(String[] args) {
     	Middleware middleware = new Middleware();
-        
+
         int port = Integer.parseInt(args[0]);
         String[] rmIps = middleware.getRmIps(args);
         int[] rmPorts = middleware.getRmPorts(args);

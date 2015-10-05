@@ -59,6 +59,7 @@ public class Command {
     public final static String SERVER_RESERVE_ROOM = "reserveRoom";
     public final static String SERVER_RESERVE_ITINERARY = "reserveItinerary";
     public final static String SERVER_UNKNOWN_COMMAND = "unknownCommand";
+    public final static String SERVER_CHECK_CUSTOMER_EXISTS = "checkCustomerExists";
 
     public final static String INTERFACE_ADD_FLIGHT = "newflight";
     public final static String INTERFACE_ADD_CARS = "newcar";

@@ -54,7 +54,8 @@ public class ClientServiceThread implements Runnable {
     	// exists, and if yes creating it at the relevant RM as necessary.
     	
     	Integer cid = getCustomerId(requestString);
-    	RMResult existenceCheck = processAtomicRequest("checkCustomerExists,1," + cid);
+    	RMResult existenceCheck = processAtomicRequest(Command.SERVER_CHECK_CUSTOMER_EXISTS + 
+    													",1," + cid);
     	if (existenceCheck.IsError())
     		return existenceCheck;
     	
@@ -152,6 +153,7 @@ public class ClientServiceThread implements Runnable {
     	case Command.INTERFACE_RESERVE_ROOM:
     		return 2;
     	case Command.INTERFACE_NEW_CUSTOMER:
+    	case 
     		return 3;
         default:
         	return -1;

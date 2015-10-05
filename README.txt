@@ -108,29 +108,4 @@ Instructions:
      [java] http-nio-8080-exec-1 INFO: RM::queryNum(1, flight-1) called.
      [java] http-nio-8080-exec-1 INFO: RM::queryNum(1, flight-1) OK: 1
 
-==========
 
-Interface:
-
-     [java] help
-     [java] newflight               boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice)
-     [java] newcar                  boolean addCars(int id, String location, int numCars, int carPrice)
-     [java] newroom                 boolean addRooms(int id, String location, int numRooms, int roomPrice)
-     [java] newcustomer             int newCustomer(int id)
-     [java] newcustomerid           boolean newCustomerId(int id, int customerId)
-     [java] deleteflight            boolean deleteFlight(int id, int flightNumber)
-     [java] deletecar               boolean deleteCars(int id, String location)
-     [java] deleteroom              boolean deleteRooms(int id, String location)
-     [java] deletecustomer          boolean deleteCustomer(int id, int customerId)
-     [java] queryflight             int queryFlight(int id, int flightNumber)
-     [java] querycar                int queryCars(int id, String location)
-     [java] queryroom               int queryRooms(int id, String location)
-     [java] querycustomer           String queryCustomerInfo(int id, int customerId)
-     [java] queryflightprice        int queryFlightPrice(int id, int flightNumber)
-     [java] querycarprice           int queryCarsPrice(int id, String location)
-     [java] queryroomprice          int queryRoomsPrice(int id, String location)
-     [java] reserveflight           boolean reserveFlight(int id, int customerId, int flightNumber)
-     [java] reservecar              boolean reserveCar(int id, int customerId, String location)
-     [java] reserveroom             boolean reserveRoom(int id, int customerId, String location)
-     [java] itinerary               boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room)
-     [java] quit

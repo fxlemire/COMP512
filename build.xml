@@ -164,17 +164,7 @@
         <classpath refid="jaxws.classpath"/>
     </taskdef>
 
-    <target name="generate-client" depends="setup">
-        <wsimport
-                quiet="true"
-                keep="true"
-                destdir="${basedir}/build/classes"
-                package="client"
-                wsdl="http://${service.host}:${service.port}/${service.name}/service?wsdl">
-        </wsimport>
-    </target>
-
-    <target name="build-client" depends="generate-client">
+    <target name="build-client">
         <javac
                 fork="true"
                 srcdir="${basedir}/src"

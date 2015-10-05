@@ -180,7 +180,6 @@
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
-            <arg value="${service.name}"/>
             <arg value="${service.mwIp}"/>
             <arg value="${service.mwPort}"/>
         </java>

@@ -103,7 +103,7 @@
 
     <target name="start-Middleware">
         <echo message="Starting Middleware... "/>
-        <java fork="true" classname="server.ws.Middleware">
+        <java fork="true" classname="server.Middleware">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
@@ -122,28 +122,28 @@
 
     <target name="start-RMManagers">
         <echo message="Starting RMManager... "/>
-        <java fork="true" classname="server.ws.RMManager">
+        <java fork="true" classname="server.RMManager">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
             <arg value="${service.rmFlightPort}"/>
         </java>
-        <java fork="true" classname="server.ws.RMManager">
+        <java fork="true" classname="server.RMManager">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
             <arg value="${service.rmCarPort}"/>
         </java>
-        <java fork="true" classname="server.ws.RMManager">
+        <java fork="true" classname="server.RMManager">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
             <arg value="${service.rmRoomPort}"/>
         </java>
-        <java fork="true" classname="server.ws.RMManager">
+        <java fork="true" classname="server.RMManager">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

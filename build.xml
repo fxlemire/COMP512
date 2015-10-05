@@ -2,8 +2,16 @@
 <project basedir="." default="help" name="project">
 
     <property name="service.name" value="rm"/>
-    <property name="service.host" value="localhost"/>
-    <property name="service.port" value="38080"/>
+    <property name="service.mwIp" value="localhost"/>
+    <property name="service.mwPort" value="38080"/>
+    <property name="service.rmFlightIp" value="127.0.0.1"/>
+    <property name="service.rmFlightPort" value="38081"/>
+    <property name="service.rmCarIp" value="127.0.0.1"/>
+    <property name="service.rmCarPort" value="38082"/>
+    <property name="service.rmRoomIp" value="127.0.0.1"/>
+    <property name="service.rmRoomPort" value="38083"/>
+    <property name="service.rmCustomerIp" value="127.0.0.1"/>
+    <property name="service.rmCustomerPort" value="38084"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -78,7 +86,7 @@
             </classpath>
             <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
             <arg value="${service.name}"/>
-            <arg value="${service.port}"/>
+            <arg value="${service.mwPort}"/>
             <arg value="${basedir}/webapps"/>
         </java>
     </target>
@@ -89,17 +97,58 @@
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
         <!--antcall target="start-tomcat"/-->
-        <antcall target="start-RMManager"/>
+        <antcall target="start-Middleware"/>
+        <antcall target="start-RMManagers"/>
     </target>
 
-    <target name="start-RMManager">
+    <target name="start-Middleware">
+        <echo message="Starting Middleware... "/>
+        <java fork="true" classname="server.ws.Middleware">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.mwPort}"/>
+            <arg value="${service.rmFlightIp}"/>
+            <arg value="${service.rmFlightPort}"/>
+            <arg value="${service.rmCarIp}"/>
+            <arg value="${service.rmCarPort}"/>
+            <arg value="${service.rmRoomIp}"/>
+            <arg value="${service.rmRoomPort}"/>
+            <arg value="${service.rmCustomerIp}"/>
+            <arg value="${service.rmCustomerPort}"/>
+        </java>
+    </target>
+
+    <target name="start-RMManagers">
         <echo message="Starting RMManager... "/>
         <java fork="true" classname="server.ws.RMManager">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
-            <arg value="${service.port}"/>
+            <arg value="${service.rmFlightPort}"/>
+        </java>
+        <java fork="true" classname="server.ws.RMManager">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.rmCarPort}"/>
+        </java>
+        <java fork="true" classname="server.ws.RMManager">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.rmRoomPort}"/>
+        </java>
+        <java fork="true" classname="server.ws.RMManager">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.rmCustomerPort}"/>
         </java>
     </target>
 
@@ -134,8 +183,8 @@
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
             <arg value="${service.name}"/>
-            <arg value="${service.host}"/>
-            <arg value="${service.port}"/>
+            <arg value="${service.mwIp}"/>
+            <arg value="${service.mwPort}"/>
         </java>
     </target>
 

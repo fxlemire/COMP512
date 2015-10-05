@@ -153,7 +153,7 @@ public class ClientServiceThread implements Runnable {
     	case Command.INTERFACE_RESERVE_ROOM:
     		return 2;
     	case Command.INTERFACE_NEW_CUSTOMER:
-    	case 
+    	case Command.SERVER_CHECK_CUSTOMER_EXISTS:
     		return 3;
         default:
         	return -1;
@@ -191,6 +191,8 @@ public class ClientServiceThread implements Runnable {
     	default:
     		return null;
     	}
+    	
+    	return null;
     }
     
     private String formatRequest(Command command, String[] request) {

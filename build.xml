@@ -97,13 +97,15 @@
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
         <!--antcall target="start-tomcat"/-->
-        <antcall target="start-Middleware"/>
-        <antcall target="start-RMManagers"/>
+        <parallel>
+            <antcall target="start-Middleware"/>
+            <antcall target="start-RMManagers"/>
+        </parallel>
     </target>
 
     <target name="start-Middleware">
         <echo message="Starting Middleware... "/>
-        <java fork="true" spawn="true" classname="server.Middleware">
+        <java fork="true" classname="server.Middleware">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

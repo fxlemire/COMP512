@@ -5,15 +5,195 @@
 
 package server;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.Socket;
 import java.util.*;
 import javax.jws.WebService;
 
 
-@WebService(endpointInterface = "server.ws.ResourceManager")
-public class ResourceManagerImpl implements server.ws.ResourceManager {
+//@WebService(endpointInterface = "server.ws.ResourceManager")
+public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable {
     
-    protected RMHashtable m_itemHT = new RMHashtable();
+    protected RMHashtable m_itemHT;
+    protected Socket m_sock;
+
+    public static void RunNonBlocking(RMHashtable data, Socket sock)
+    {    	
+    	// This method is here to
+    	// 1) hide the Thread from the connection logic
+    	// 2) make sure that the rmImpl is constructed properly before running it
+    	// 		(which would not happen if the thread was in the constructor)
+    	ResourceManagerImpl instance = new ResourceManagerImpl(data, sock);
+    	Thread self = new Thread(instance);
+    	self.start();
+    }
     
+    private ResourceManagerImpl(RMHashtable data, Socket sock)
+    {
+    	m_itemHT = data;
+    	m_sock = sock;
+    }
+    
+    private void returnFailure(ObjectOutputStream out, String error)
+    {
+    	Exception contents = new Exception(error);
+    	RMResult result = new RMResult(contents);
+    	
+    	try
+    	{
+    		out.writeObject(result);
+    		out.flush();
+    		m_sock.close();
+    	}
+    	catch (IOException e)
+    	{
+    		Trace.error("Could not return this failure: " + error);
+    	}
+    }
+    
+    public void run()
+    {
+    	// Read input from socket
+    	InputStream sock_in = null;
+    	String input = null;
+    	ObjectOutputStream out = null;
+    	try
+    	{
+    		sock_in = m_sock.getInputStream();
+    		out = new ObjectOutputStream(m_sock.getOutputStream());
+    		out.flush();
+    		
+    		DataInputStream in = new DataInputStream(sock_in);
+    		input = in.readUTF();
+    	}
+    	catch (IOException e)
+    	{
+    		Trace.error("Could not obtain command.");
+    		return;
+    	}
+    	
+    	// Get command, arguments from input
+    	String[] cmdParts = input.split(",");
+    	for(int i = 0 ; i < cmdParts.length ; i++)
+    		cmdParts[i] = cmdParts[i].trim();
+    	
+    	// Get method from command and typecheck
+    	Method operation = null; // This is what we'll execute
+    	Object[] params = null; // Parameters to the method
+    	Class myClass = this.getClass();
+    	boolean methodExists = false; // For error reporting purposes
+    	
+    	// We're doing it this way by looping through the methods
+    	// so that we can have some "overloading" if we want to.
+    	// (for example reserveItinerary <flight> vs.
+    	// reserveItinerary <flight> <car> <hotel> could execute
+    	// different methods)
+    	Method[] myMethods = myClass.getMethods();
+    	for (int i = 0 ; i < myMethods.length ; i++)
+    	{
+    		if (myMethods[i].getName().equalsIgnoreCase(cmdParts[0]))
+    		{
+    			methodExists = true;
+    			Class[] paramTypes = myMethods[i].getParameterTypes();
+    			
+    			// Do the number of parameters match?
+    			if (paramTypes.length + 1 != cmdParts.length)
+    				continue;
+    			
+    			// Typecheck and collect arguments for the method
+    			Object[] candidateParams = new Object[paramTypes.length];
+    			boolean typechecks = true;
+    			
+    			for (int j = 0 ; j < paramTypes.length && typechecks ; j++) 
+    			{
+    				if (paramTypes[j].equals(String.class))
+    				{
+    					candidateParams[j] = cmdParts[j + 1];
+    				}
+    				else if (paramTypes[j].equals(int.class))
+    				{
+    					try
+    					{
+    						candidateParams[j] = Integer.parseInt(cmdParts[j + 1]);
+    					}
+    					catch (NumberFormatException e)
+    					{
+    						// Move on to next method
+    						typechecks = false;
+    						break;
+    					}
+    				}
+    				else
+    				{
+    					throw new AssertionError("Unsupported method parameter type");
+    				}
+    			}
+    			
+    			// If all types correspond, then we got our method and we're done.
+    			if (typechecks)
+    			{
+    				params = candidateParams;
+    				operation = myMethods[i];
+    				break;
+    			}
+    		}
+    	}
+    	
+    	// If we didn't find the method we needed, send back an error.
+    	if (operation == null)
+    	{
+    		if (methodExists)
+    		{
+    			returnFailure(out, input + " has wrong parameters.");
+    		}
+    		else
+    		{
+    			returnFailure(out, cmdParts[0] + ": no such method");
+    		}
+    		return;
+    	}
+    	
+    	System.out.println(Arrays.toString(params));
+    	Object result = null;
+    	try
+    	{
+    		result = operation.invoke(this, params);    		
+    	}
+    	catch (Exception e)
+    	{
+    		Trace.error("Could not call method " + operation.getName() + ": " + e.getMessage());
+    		returnFailure(out, "Internal server error when executing " + input);
+    	}
+    	
+    	if (!(result instanceof Serializable))
+    	{
+    		// Assertion because the programmer should return the proper thing.
+    		throw new AssertionError("Result of method must be serializable");
+    	}
+    	
+    	// Send over socket
+    	try
+    	{
+    		// The cast here should be safe since we checked that it was an instance before
+    		RMResult packagedResult = new RMResult((Serializable) result);
+    		out.writeObject(packagedResult);
+    		out.flush();
+    		m_sock.close();
+    	}
+    	catch (IOException e)
+    	{
+    		Trace.error("Could not send result back to client.");
+    	}
+    }
     
     // Basic operations on RMItem //
     
@@ -389,6 +569,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         } else {
             return cust.getReservations();
         }
+    }
+    
+    // Just check whether a customer exists or not.
+    public boolean checkCustomerExists(int id, int customerId) {
+    	Trace.info("RM::checkCustomerExists(" + id + ", " 
+                + customerId + ") called.");
+    	
+    	if (readData(id, Customer.getKey(customerId)) == null)
+    		return false;
+    	return true;
     }
 
     // Return a bill.

@@ -2,8 +2,16 @@
 <project basedir="." default="help" name="project">
 
     <property name="service.name" value="rm"/>
-    <property name="service.host" value="localhost"/>
-    <property name="service.port" value="8080"/>
+    <property name="service.mwIp" value="localhost"/>
+    <property name="service.mwPort" value="38080"/>
+    <property name="service.rmFlightIp" value="127.0.0.1"/>
+    <property name="service.rmFlightPort" value="38081"/>
+    <property name="service.rmCarIp" value="127.0.0.1"/>
+    <property name="service.rmCarPort" value="38082"/>
+    <property name="service.rmRoomIp" value="127.0.0.1"/>
+    <property name="service.rmRoomPort" value="38083"/>
+    <property name="service.rmCustomerIp" value="127.0.0.1"/>
+    <property name="service.rmCustomerPort" value="38084"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -24,7 +32,7 @@
         <mkdir dir="${basedir}/webapps"/>
     </target>
 
-    <taskdef name="annotationProcessing" 
+    <taskdef name="annotationProcessing"
              classname="com.sun.tools.ws.ant.AnnotationProcessingTask">
         <classpath refid="jaxws.classpath"/>
     </taskdef>
@@ -78,7 +86,7 @@
             </classpath>
             <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
             <arg value="${service.name}"/>
-            <arg value="${service.port}"/>
+            <arg value="${service.mwPort}"/>
             <arg value="${basedir}/webapps"/>
         </java>
     </target>
@@ -88,24 +96,77 @@
         <antcall target="build-server"/>
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
-        <antcall target="start-tomcat"/>        
+        <!--antcall target="start-tomcat"/-->
+        <parallel>
+            <antcall target="start-Middleware"/>
+            <antcall target="start-RMManagers"/>
+        </parallel>
+    </target>
+
+    <target name="start-Middleware">
+        <echo message="Starting Middleware... "/>
+        <java fork="true" classname="server.Middleware">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.mwPort}"/>
+            <arg value="${service.rmFlightIp}"/>
+            <arg value="${service.rmFlightPort}"/>
+            <arg value="${service.rmCarIp}"/>
+            <arg value="${service.rmCarPort}"/>
+            <arg value="${service.rmRoomIp}"/>
+            <arg value="${service.rmRoomPort}"/>
+            <arg value="${service.rmCustomerIp}"/>
+            <arg value="${service.rmCustomerPort}"/>
+        </java>
+    </target>
+
+    <target name="start-RMManagers">
+        <echo message="Starting RMManager Flight..."/>
+        <parallel>
+            <java fork="true" classname="server.RMManager">
+                <classpath>
+                    <path refid="jaxws.classpath"/>
+                    <pathelement location="${basedir}/build/classes"/>
+                </classpath>
+                <arg value="${service.rmFlightPort}"/>
+            </java>
+            
+            <echo message="Starting RMManager Car..."/>
+            <java fork="true" classname="server.RMManager">
+                <classpath>
+                    <path refid="jaxws.classpath"/>
+                    <pathelement location="${basedir}/build/classes"/>
+                </classpath>
+                <arg value="${service.rmCarPort}"/>
+            </java>
+
+            <echo message="Starting RMManager Room..."/>
+            <java fork="true" classname="server.RMManager">
+                <classpath>
+                    <path refid="jaxws.classpath"/>
+                    <pathelement location="${basedir}/build/classes"/>
+                </classpath>
+                <arg value="${service.rmRoomPort}"/>
+            </java>
+
+            <echo message="Starting RMManager Customer..."/>
+            <java fork="true" classname="server.RMManager">
+                <classpath>
+                    <path refid="jaxws.classpath"/>
+                    <pathelement location="${basedir}/build/classes"/>
+                </classpath>
+                <arg value="${service.rmCustomerPort}"/>
+            </java>
+        </parallel>
     </target>
 
     <taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
         <classpath refid="jaxws.classpath"/>
     </taskdef>
 
-    <target name="generate-client" depends="setup">
-        <wsimport
-                quiet="true"
-                keep="true"
-                destdir="${basedir}/build/classes"
-                package="client"
-                wsdl="http://${service.host}:${service.port}/${service.name}/service?wsdl">
-        </wsimport>
-    </target>
-
-    <target name="build-client" depends="generate-client">
+    <target name="build-client">
         <javac
                 fork="true"
                 srcdir="${basedir}/src"
@@ -121,9 +182,8 @@
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
-            <arg value="${service.name}"/>
-            <arg value="${service.host}"/>
-            <arg value="${service.port}"/>
+            <arg value="${service.mwIp}"/>
+            <arg value="${service.mwPort}"/>
         </java>
     </target>
 

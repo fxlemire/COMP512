@@ -2,6 +2,7 @@ package server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -34,22 +35,25 @@ public class ClientServiceThread implements Runnable {
         	outputStream.flush();
         	
             DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
-            String request = inputStream.readUTF();
             
-            Trace.info("Received request: " + request);
-
-            RMResult res = processIfComposite(request);
-            if (res == null) {
-            	res = processIfCIDRequired(request);
-            	if (res == null) {
-            		res = processAtomicRequest(request);
-            	}
+            while (true) {
+	            String request = inputStream.readUTF();
+	            
+	            Trace.info("Received request: " + request);
+	
+	            RMResult res = processIfComposite(request);
+	            if (res == null) {
+	            	res = processIfCIDRequired(request);
+	            	if (res == null) {
+	            		res = processAtomicRequest(request);
+	            	}
+	            }
+	
+	            outputStream.writeObject(res);
+	            outputStream.flush();
             }
-
-            outputStream.writeObject(res);
-            outputStream.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+        	e.printStackTrace();
         }
     }
 
@@ -203,7 +207,7 @@ public class ClientServiceThread implements Runnable {
         String requestForRm = command.getMethod();
         short arguments = command.getArguments();
 
-        for (short i = 1; i < arguments; ++i) {
+        for (short i = 1; i < arguments + 1; ++i) {
             requestForRm += "," + request[i];
         }
 

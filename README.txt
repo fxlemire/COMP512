@@ -108,4 +108,29 @@ Instructions:
      [java] http-nio-8080-exec-1 INFO: RM::queryNum(1, flight-1) called.
      [java] http-nio-8080-exec-1 INFO: RM::queryNum(1, flight-1) OK: 1
 
+==========
 
+Interface:
+
+help		
+newflight           boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice)		
+newcar              boolean addCars(int id, String location, int numCars, int carPrice)		
+newroom             boolean addRooms(int id, String location, int numRooms, int roomPrice)		
+newcustomer         int newCustomer(int id)		
+newcustomerid       boolean newCustomerId(int id, int customerId)		
+deleteflight        boolean deleteFlight(int id, int flightNumber)		
+deletecar           boolean deleteCars(int id, String location)		
+deleteroom          boolean deleteRooms(int id, String location)		
+deletecustomer      boolean deleteCustomer(int id, int customerId)		
+queryflight         int queryFlight(int id, int flightNumber)		
+querycar            int queryCars(int id, String location)		
+queryroom           int queryRooms(int id, String location)		
+querycustomer       String queryCustomerInfo(int id, int customerId)		
+queryflightprice    int queryFlightPrice(int id, int flightNumber)		
+querycarprice       int queryCarsPrice(int id, String location)		
+queryroomprice      int queryRoomsPrice(int id, String location)		
+reserveflight       boolean reserveFlight(int id, int customerId, int flightNumber)		
+reservecar          boolean reserveCar(int id, int customerId, String location)		
+reserveroom         boolean reserveRoom(int id, int customerId, String location)		
+itinerary           boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room)		
+quit

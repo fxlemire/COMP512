@@ -325,18 +325,9 @@ public class Client {
                 System.out.println("Querying Customer information using id: " + arguments.elementAt(1));
                 System.out.println("Customer id: " + arguments.elementAt(2));
                 try {
-                    m_out.writeUTF(command);
-                    m_out.flush();
-                    int i = 0;
-
-                    while (i++ < 4) {
-                        result = (RMResult) m_in.readObject();
-                        if (result.IsError())
-                            throw result.AsError();
-
-                        String bill = result.AsString();
-                        System.out.println("Customer info: " + bill);
-                    }
+                    result = executeCommand(command);
+                    String bill = result.AsString();
+                    System.out.println("Customer info: " + bill);
                 }
                 catch(EOFException e) {
                     //no more bills

@@ -2,12 +2,12 @@ package server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ClientServiceThread implements Runnable {
     private int[] _rmPorts;
@@ -42,21 +42,16 @@ public class ClientServiceThread implements Runnable {
 	            
 	            Trace.info("Received request: " + request);
 	
-	            ArrayList<RMResult> results = processIfComposite(request);
-	            if (results != null) {
-					for (RMResult result : results) {
-						outputStream.writeObject(result);
-						outputStream.flush();
+	            RMResult response = processIfComposite(request);
+	            if (response == null) {
+					response = processIfCIDRequired(request);
+					if (response == null) {
+						response = processAtomicRequest(request);
 					}
-				} else {
-					RMResult res = processIfCIDRequired(request);
-					if (res == null) {
-						res = processAtomicRequest(request);
-					}
-
-					outputStream.writeObject(res);
-					outputStream.flush();
 				}
+
+				outputStream.writeObject(response);
+				outputStream.flush();
             }
         } catch (IOException e) {
         	e.printStackTrace();
@@ -187,11 +182,11 @@ public class ClientServiceThread implements Runnable {
     	}
     }
     
-    private ArrayList<RMResult> processIfComposite(String requestString) {
+    private RMResult processIfComposite(String requestString) {
     	// Execute a composite method for this request if necessary.
     	// Returns a result, or null if the request corresponds to 
     	// no composite action.
-		ArrayList<RMResult> results = null;
+		RMResult result = null;
     	String[] parts = requestString.split(",");
 
 		final String FLIGHT_IP = _rmIps[0];
@@ -211,17 +206,32 @@ public class ClientServiceThread implements Runnable {
     		//TODO Book an itinerary...
     		break;
     	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
-			results = new ArrayList<>();
-			results.add(processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT));
-			results.add(processAtomicRequest(requestString, CAR_IP, CAR_PORT));
-			results.add(processAtomicRequest(requestString, ROOM_IP, ROOM_PORT));
-			results.add(processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT));
+			ArrayList<String> finalBill = new ArrayList<>();
+
+			result = processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT);
+			ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
+			finalBill.add(0, tempBill.get(0));
+			finalBill = addToBill(finalBill, result);
+
+			result = processAtomicRequest(requestString, CAR_IP, CAR_PORT);
+			finalBill = addToBill(finalBill, result);
+
+			result = processAtomicRequest(requestString, ROOM_IP, ROOM_PORT);
+			finalBill = addToBill(finalBill, result);
+
+			finalBill = addBillTotal(finalBill);
+
+			finalBill.add(finalBill.size(), "}");
+
+			String resultString = String.join("\n", finalBill);
+
+			result = new RMResult(resultString);
     		break;
     	default:
 			break;
     	}
-    	
-    	return results;
+
+		return result;
     }
     
     private String formatRequest(Command command, String[] request) {
@@ -234,4 +244,24 @@ public class ClientServiceThread implements Runnable {
 
         return requestForRm;
     }
+
+	private ArrayList<String> addToBill(ArrayList<String> finalBill, RMResult result) {
+		ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
+		tempBill.remove(0);
+		tempBill.remove(tempBill.size() - 1);
+		finalBill.addAll(tempBill);
+		return finalBill;
+	}
+
+	private ArrayList<String> addBillTotal(ArrayList<String> bill) {
+		int total = 0;
+
+		for (int i = 1; i < bill.size(); ++i) {
+			total += Integer.parseInt(bill.get(i).split("\\$")[1]);
+		}
+
+		bill.add(bill.size(), "Total: $" + total);
+
+		return bill;
+	}
 }

@@ -68,10 +68,11 @@ public class ClientServiceThread implements Runnable {
     	// exists, and if yes creating it at the relevant RM as necessary.
     	
     	Integer cid = getCustomerId(requestString);
-    	RMResult existenceCheck = processAtomicRequest(Command.SERVER_CHECK_CUSTOMER_EXISTS + 
+    	RMResult existenceCheck = processAtomicRequest(Command.SERVER_CHECK_CUSTOMER_EXISTS +
     													",1," + cid);
-    	if (existenceCheck.IsError())
-    		return existenceCheck;
+    	if (existenceCheck.IsError()) {
+			return existenceCheck;
+		}
     	
     	if (!existenceCheck.AsBool()) {
     		RMResult failure = new RMResult(new Exception("Customer " + cid + " does not exist."));
@@ -110,7 +111,6 @@ public class ClientServiceThread implements Runnable {
 
             String[] request = requestString.split(",");
             Command command = Command.getCommandForInterfaceCall(request[0]);
-
             String requestForRm = formatRequest(command, request);
             outputStream.writeUTF(requestForRm);
             outputStream.flush();
@@ -191,7 +191,7 @@ public class ClientServiceThread implements Runnable {
     	// Execute a composite method for this request if necessary.
     	// Returns a result, or null if the request corresponds to 
     	// no composite action.
-		ArrayList<RMResult> results = new ArrayList<>();
+		ArrayList<RMResult> results = null;
     	String[] parts = requestString.split(",");
 
 		final String FLIGHT_IP = _rmIps[0];
@@ -211,13 +211,14 @@ public class ClientServiceThread implements Runnable {
     		//TODO Book an itinerary...
     		break;
     	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
+			results = new ArrayList<>();
 			results.add(processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT));
 			results.add(processAtomicRequest(requestString, CAR_IP, CAR_PORT));
 			results.add(processAtomicRequest(requestString, ROOM_IP, ROOM_PORT));
 			results.add(processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT));
     		break;
     	default:
-    		return null;
+			break;
     	}
     	
     	return results;

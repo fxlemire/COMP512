@@ -30,8 +30,13 @@ public class ClientServiceThread implements Runnable {
 
     public void run() {
         try {
+        	ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
+        	outputStream.flush();
+        	
             DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
             String request = inputStream.readUTF();
+            
+            Trace.info("Received request: " + request);
 
             RMResult res = processIfComposite(request);
             if (res == null) {
@@ -41,7 +46,6 @@ public class ClientServiceThread implements Runnable {
             	}
             }
 
-            ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
             outputStream.writeObject(res);
             outputStream.flush();
         } catch (IOException e) {

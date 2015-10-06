@@ -17,7 +17,8 @@ public class RMManager {
     private void start(int port) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
-                try (Socket clientSocket = serverSocket.accept()) {
+                try {
+                	Socket clientSocket = serverSocket.accept();
                     ResourceManagerImpl.RunNonBlocking(_m_itemHT, clientSocket);
                 } catch (IOException e) {
                     e.printStackTrace();

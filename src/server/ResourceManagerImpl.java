@@ -6,6 +6,7 @@
 package server;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -42,16 +43,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	m_sock = sock;
     }
     
-    private void returnFailure(String error)
+    private void returnFailure(ObjectOutputStream out, String error)
     {
     	Exception contents = new Exception(error);
     	RMResult result = new RMResult(contents);
     	
     	try
     	{
-    		OutputStream sock_out = m_sock.getOutputStream();
-    		ObjectOutputStream out = new ObjectOutputStream(sock_out);
     		out.writeObject(result);
+    		out.flush();
     		m_sock.close();
     	}
     	catch (IOException e)
@@ -65,11 +65,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	// Read input from socket
     	InputStream sock_in = null;
     	String input = null;
+    	ObjectOutputStream out = null;
     	try
     	{
     		sock_in = m_sock.getInputStream();
-    		BufferedReader in = new BufferedReader(new InputStreamReader(sock_in));
-    		input = in.readLine();
+    		out = new ObjectOutputStream(m_sock.getOutputStream());
+    		out.flush();
+    		
+    		DataInputStream in = new DataInputStream(sock_in);
+    		input = in.readUTF();
     	}
     	catch (IOException e)
     	{
@@ -149,11 +153,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	{
     		if (methodExists)
     		{
-    			returnFailure(input + " has wrong parameters.");
+    			returnFailure(out, input + " has wrong parameters.");
     		}
     		else
     		{
-    			returnFailure(cmdParts[0] + ": no such method");
+    			returnFailure(out, cmdParts[0] + ": no such method");
     		}
     		return;
     	}
@@ -167,7 +171,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	catch (Exception e)
     	{
     		Trace.error("Could not call method " + operation.getName() + ": " + e.getMessage());
-    		returnFailure("Internal server error when executing " + input);
+    		returnFailure(out, "Internal server error when executing " + input);
     	}
     	
     	if (!(result instanceof Serializable))
@@ -177,14 +181,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager, Runnable 
     	}
     	
     	// Send over socket
-    	OutputStream sock_out = null;
     	try
     	{
     		// The cast here should be safe since we checked that it was an instance before
     		RMResult packagedResult = new RMResult((Serializable) result);
-    		sock_out = m_sock.getOutputStream();
-    		ObjectOutputStream out = new ObjectOutputStream(sock_out);
-    		out.writeObject(result);
+    		out.writeObject(packagedResult);
+    		out.flush();
     		m_sock.close();
     	}
     	catch (IOException e)

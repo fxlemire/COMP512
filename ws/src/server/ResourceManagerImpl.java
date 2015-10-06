@@ -7,13 +7,15 @@ package server;
 
 import java.util.*;
 import javax.jws.WebService;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
-public class ResourceManagerImpl implements server.ws.ResourceManager {
-    
+public class ResourceManagerImpl implements server.ws.ResourceManager {	
+	
     protected RMHashtable m_itemHT = new RMHashtable();
-    
     
     // Basic operations on RMItem //
     
@@ -132,7 +134,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Create a new flight, or add seats to existing flight.
     // Note: if flightPrice <= 0 and the flight already exists, it maintains 
     // its current price.
-    @Override
+    
     public boolean addFlight(int id, int flightNumber, 
                              int numSeats, int flightPrice) {
         Trace.info("RM::addFlight(" + id + ", " + flightNumber 
@@ -158,13 +160,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         return(true);
     }
 
-    @Override
+    
     public boolean deleteFlight(int id, int flightNumber) {
         return deleteItem(id, Flight.getKey(flightNumber));
     }
 
     // Returns the number of empty seats on this flight.
-    @Override
+    
     public int queryFlight(int id, int flightNumber) {
         return queryNum(id, Flight.getKey(flightNumber));
     }
@@ -216,7 +218,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Create a new car location or add cars to an existing location.
     // Note: if price <= 0 and the car location already exists, it maintains 
     // its current price.
-    @Override
+    
     public boolean addCars(int id, String location, int numCars, int carPrice) {
         Trace.info("RM::addCars(" + id + ", " + location + ", " 
                 + numCars + ", $" + carPrice + ") called.");
@@ -242,19 +244,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Delete cars from a location.
-    @Override
+    
     public boolean deleteCars(int id, String location) {
         return deleteItem(id, Car.getKey(location));
     }
 
     // Returns the number of cars available at a location.
-    @Override
+    
     public int queryCars(int id, String location) {
         return queryNum(id, Car.getKey(location));
     }
 
     // Returns price of cars at this location.
-    @Override
+    
     public int queryCarsPrice(int id, String location) {
         return queryPrice(id, Car.getKey(location));
     }
@@ -265,7 +267,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Create a new room location or add rooms to an existing location.
     // Note: if price <= 0 and the room location already exists, it maintains 
     // its current price.
-    @Override
+    
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
         Trace.info("RM::addRooms(" + id + ", " + location + ", " 
                 + numRooms + ", $" + roomPrice + ") called.");
@@ -291,19 +293,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Delete rooms from a location.
-    @Override
+    
     public boolean deleteRooms(int id, String location) {
         return deleteItem(id, Room.getKey(location));
     }
 
     // Returns the number of rooms available at a location.
-    @Override
+    
     public int queryRooms(int id, String location) {
         return queryNum(id, Room.getKey(location));
     }
     
     // Returns room price at this location.
-    @Override
+    
     public int queryRoomsPrice(int id, String location) {
         return queryPrice(id, Room.getKey(location));
     }
@@ -311,9 +313,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     // Customer operations //
 
-    @Override
-    public int newCustomer(int id) {
+    
+    public int newCustomer(int id) {    	
         Trace.info("INFO: RM::newCustomer(" + id + ") called.");
+        
         // Generate a globally unique Id for the new customer.
         int customerId = Integer.parseInt(String.valueOf(id) +
                 String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
@@ -325,7 +328,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // This method makes testing easier.
-    @Override
+    
     public boolean newCustomerId(int id, int customerId) {
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -342,7 +345,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Delete customer from the database. 
-    @Override
+    
     public boolean deleteCustomer(int id, int customerId) {
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -392,7 +395,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Return a bill.
-    @Override
+    
     public String queryCustomerInfo(int id, int customerId) {
         Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -410,27 +413,27 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Add flight reservation to this customer.  
-    @Override
+    
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
         return reserveItem(id, customerId, 
                 Flight.getKey(flightNumber), String.valueOf(flightNumber));
     }
 
     // Add car reservation to this customer. 
-    @Override
+    
     public boolean reserveCar(int id, int customerId, String location) {
         return reserveItem(id, customerId, Car.getKey(location), location);
     }
 
     // Add room reservation to this customer. 
-    @Override
+    
     public boolean reserveRoom(int id, int customerId, String location) {
         return reserveItem(id, customerId, Room.getKey(location), location);
     }
     
 
     // Reserve an itinerary.
-    @Override
+    
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room) {
         return false;

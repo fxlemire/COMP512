@@ -5,17 +5,18 @@ import java.io.*;
 import java.net.*;
 
 import server.RMResult;
+import server.Trace;
 
 public class Client {
 
 	Socket m_sock;
-	PrintWriter m_out;
+	DataOutputStream m_out;
 	ObjectInputStream m_in;
 	
     public Client(InetAddress addr, int port) throws IOException
     {
         m_sock = new Socket(addr, port);
-        m_out = new PrintWriter(m_sock.getOutputStream());
+        m_out = new DataOutputStream(m_sock.getOutputStream());
         m_in = new ObjectInputStream(m_sock.getInputStream());
     }
 
@@ -26,12 +27,10 @@ public class Client {
                 System.out.println("Usage: MyClient <middleware-ip> <middleware-port>");
                 System.exit(-1);
             }
-            
             InetAddress addr = InetAddress.getByName(args[0]);
             int port = Integer.parseInt(args[1]);
             
             Client client = new Client(addr, port);
-            
             client.run();
             
         } catch(Exception e) {
@@ -794,7 +793,8 @@ public class Client {
 
     public RMResult executeCommand(String cmd) throws Exception
     {
-    	m_out.println(cmd);
+    	m_out.writeUTF(cmd);
+    	m_out.flush();
     	RMResult result = (RMResult) m_in.readObject();
         if (result.IsError())
         	throw result.AsError();

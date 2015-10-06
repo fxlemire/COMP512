@@ -1,5 +1,6 @@
 package server;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,8 +21,8 @@ public class Middleware {
      */
 
     public static void main(String[] args) {
-        Middleware middleware = new Middleware();
-
+    	Middleware middleware = new Middleware();
+        
         int port = Integer.parseInt(args[0]);
         String[] rmIps = middleware.getRmIps(args);
         int[] rmPorts = middleware.getRmPorts(args);
@@ -32,7 +33,8 @@ public class Middleware {
     private void start(int port, String[] rmIp, int[] rmPort) {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             while (true) {
-                try (Socket clientSocket = serverSocket.accept()) {
+                try {
+                	Socket clientSocket = serverSocket.accept();
                     ClientServiceThread.RunNonBlocking(clientSocket, rmIp, rmPort);
                 } catch (IOException e) {
                     e.printStackTrace();

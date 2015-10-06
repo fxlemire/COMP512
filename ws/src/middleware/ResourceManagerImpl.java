@@ -5,7 +5,6 @@
 
 package middleware;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
@@ -13,21 +12,11 @@ import javax.jws.WebService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import javax.servlet.ServletContext;
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.handler.MessageContext;
-
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	
-	/* Documentation indicates that, while the proxy objects are not
-	 * considered thread-safe, there should be no ill-effects by using
-	 * them the way we do - that is, without using per-request settings,
-	 * sessions or security tokens. Hence, we're not bothering with
-	 * creating a proxy pool or something else.
-	 * 
-	 * http://cxf.apache.org/faq.html#FAQ-AreJAX-WSclientproxiesthreadsafe?
+	/* TODO implement a pool.
 	 */
 	private ResourceManager flightProxy;
 	private ResourceManager carProxy;
@@ -68,59 +57,59 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
-		// TODO Auto-generated method stub
-		return false;
+		return carProxy.addCars(id, location, numCars, carPrice);
 	}
 
 	public boolean addFlight(int id, int flightNumber, int numSeats,
 			int flightPrice) {
-		// TODO Auto-generated method stub
-		return false;
+		return flightProxy.addFlight(id, flightNumber, numSeats, flightPrice);
 	}
 
 	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-		// TODO Auto-generated method stub
-		return false;
+		return roomProxy.addRooms(id, location, numRooms, roomPrice);
 	}
 
 	public boolean deleteCars(int id, String location) {
-		// TODO Auto-generated method stub
-		return false;
+		return carProxy.deleteCars(id, location);
 	}
 
 	public boolean deleteCustomer(int id, int customerId) {
-		// TODO Auto-generated method stub
-		return false;
+		if (!customerProxy.checkCustomerExistence(id, customerId))
+		{
+			return false;
+		}
+		
+		carProxy.deleteCustomer(id, customerId);
+		flightProxy.deleteCustomer(id, customerId);
+		roomProxy.deleteCustomer(id, customerId);
+		customerProxy.deleteCustomer(id, customerId);
+		return true;
 	}
 
 	public boolean deleteFlight(int id, int flightNumber) {
-		// TODO Auto-generated method stub
-		return false;
+		return flightProxy.deleteFlight(id, flightNumber);
 	}
 
 	public boolean deleteRooms(int id, String location) {
-		// TODO Auto-generated method stub
-		return false;
+		return roomProxy.deleteRooms(id, location);
 	}
 
 	public int newCustomer(int id) {
-		// TODO Auto-generated method stub
-		return 0;
+		return customerProxy.newCustomer(id);
 	}
 
 	public boolean newCustomerId(int id, int customerId) {
-		// TODO Auto-generated method stub
-		return false;
+		// Just call this at the customer RM. Normally the
+		// client won't use it by themselves.
+		return customerProxy.newCustomerId(id, customerId);
 	}
 
 	public int queryCars(int id, String location) {
-		// TODO Auto-generated method stub
-		return 0;
+		return carProxy.queryCars(id, location);
 	}
 
 	public int queryCarsPrice(int id, String location) {
-		// TODO Auto-generated method stub
-		return 0;
+		return carProxy.queryCarsPrice(id, location);
 	}
 
 	public String queryCustomerInfo(int id, int customerId) {
@@ -129,32 +118,38 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryFlight(int id, int flightNumber) {
-		// TODO Auto-generated method stub
-		return 0;
+		return flightProxy.queryFlight(id, flightNumber);
 	}
 
 	public int queryFlightPrice(int id, int flightNumber) {
-		// TODO Auto-generated method stub
-		return 0;
+		return flightProxy.queryFlightPrice(id, flightNumber);
 	}
 
 	public int queryRooms(int id, String location) {
-		// TODO Auto-generated method stub
-		return 0;
+		return roomProxy.queryRooms(id, location);
 	}
 
 	public int queryRoomsPrice(int id, String location) {
-		// TODO Auto-generated method stub
-		return 0;
+		return roomProxy.queryRoomsPrice(id, location);
 	}
 
 	public boolean reserveCar(int id, int customerId, String location) {
-		// TODO Auto-generated method stub
+		if (customerProxy.checkCustomerExistence(id, customerId))
+		{
+			carProxy.newCustomerId(id, customerId);
+			return carProxy.reserveCar(id, customerId, location);
+		}
+		
 		return false;
 	}
 
 	public boolean reserveFlight(int id, int customerId, int flightNumber) {
-		// TODO Auto-generated method stub
+		if (customerProxy.checkCustomerExistence(id, customerId))
+		{
+			flightProxy.newCustomerId(id, customerId);
+			return flightProxy.reserveFlight(id, customerId, flightNumber);
+		}
+		
 		return false;
 	}
 
@@ -165,8 +160,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean reserveRoom(int id, int customerId, String location) {
-		// TODO Auto-generated method stub
+		if (customerProxy.checkCustomerExistence(id, customerId))
+		{
+			roomProxy.newCustomerId(id, customerId);
+			return roomProxy.reserveCar(id, customerId, location);
+		}
+		
 		return false;
+	}
+
+	public boolean checkCustomerExistence(int id, int customerId) {
+		// Again, this method probably won't be called by the client.
+		return customerProxy.checkCustomerExistence(id, customerId);
 	}
     
 }

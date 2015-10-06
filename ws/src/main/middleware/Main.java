@@ -12,10 +12,7 @@ public class Main {
 
     public static void main(String[] args) 
     throws Exception {
-    	
-    	System.out.println("I AM A MEEEEEEEEEDLEWARE");
-    	System.out.println(Arrays.toString(args));
-    	
+    	    	
         if (args.length != 3) {
             System.out.println(
                 "Usage: java Main <service-name> <service-port> <deploy-dir>");

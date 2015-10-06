@@ -17,8 +17,6 @@ public class Main {
                 "Usage: java Main <service-name> <service-port> <deploy-dir>");
             System.exit(-1);
         }
-    
-
         
         String serviceName = args[0];
         int port = Integer.parseInt(args[1]);

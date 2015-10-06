@@ -439,4 +439,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         return false;
     }
 
+	public boolean checkCustomerExistence(int id, int customerId) {
+		Trace.info("RM::checkCustomerExistence(" + id + ", " + customerId + ") called.");
+        if (readData(id, Customer.getKey(customerId)) == null)
+        	return false;
+        return true;
+	}
+
 }

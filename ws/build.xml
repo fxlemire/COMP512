@@ -206,11 +206,6 @@
 			</antcall>
 		</parallel>
 	</target>
-	
-    <!-- <target name="server" depends="setup">
-        <antcall target="clean"/>
-        Build server (RMs) and middleware in parallel...
-    </target> -->
 
     <target name="generate-client" depends="setup">
         <wsimport
@@ -233,7 +228,7 @@
     </target>
 
     <target name="client" depends="build-client">
-        <java classname="client.Client">
+        <java classname="client.Client" fork="true">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

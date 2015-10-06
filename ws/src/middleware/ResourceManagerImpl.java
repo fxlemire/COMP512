@@ -13,6 +13,8 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
+import com.sun.naming.internal.ResourceManager;
+
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	
@@ -104,6 +106,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		ResourceManager proxy = customerProxies.checkOut();
 		if (!proxy.checkCustomerExistence(id, customerId))
 		{
+			customerProxies.checkIn(proxy);
 			return false;
 		}
 		proxy.deleteCustomer(id, customerId);
@@ -262,7 +265,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		
 		// Have a simple management of proxies here.
-		// TODO This could deadlock, figure out if we can fix it.
 		ResourceManager flightProxy = flightProxies.checkOut();
 		ResourceManager carProxy = carProxies.checkOut();
 		ResourceManager roomProxy = roomProxies.checkOut();

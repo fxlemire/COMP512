@@ -3,6 +3,7 @@ package middleware;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -17,6 +18,7 @@ public class ObjectPool<T> {
 	private Queue<T> m_pool;
 	private Semaphore m_sem;
 	private Object m_lock = new Object();
+	private static final int ACQUIRE_TIMEOUT_S = 45;
 	
 	public ObjectPool (Iterable<T> objects)
 	{
@@ -25,14 +27,22 @@ public class ObjectPool<T> {
 		{
 			m_pool.offer(obj);
 		}
-		m_sem = new Semaphore(m_pool.size());
+		
+		// This semaphore should be fair, since we want to time out on it.
+		m_sem = new Semaphore(m_pool.size(), true);
 	}
 	
 	public T checkOut()
 	{
 		try 
 		{
-			m_sem.acquire();
+			// Only try to acquire an object for 45 seconds.
+			// This is a hackish way to prevent deadlocks.
+			if (!m_sem.tryAcquire(ObjectPool.ACQUIRE_TIMEOUT_S, TimeUnit.SECONDS))
+			{
+				throw new RuntimeException("Could not acquire object within " +
+					ObjectPool.ACQUIRE_TIMEOUT_S + " seconds, system might be deadlocked.");
+			}
 		}
 		catch (InterruptedException e)
 		{

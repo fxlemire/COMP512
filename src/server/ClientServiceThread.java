@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class ClientServiceThread implements Runnable {
     private int[] _rmPorts;
@@ -41,16 +42,21 @@ public class ClientServiceThread implements Runnable {
 	            
 	            Trace.info("Received request: " + request);
 	
-	            RMResult res = processIfComposite(request);
-	            if (res == null) {
-	            	res = processIfCIDRequired(request);
-	            	if (res == null) {
-	            		res = processAtomicRequest(request);
-	            	}
-	            }
-	
-	            outputStream.writeObject(res);
-	            outputStream.flush();
+	            ArrayList<RMResult> results = processIfComposite(request);
+	            if (results != null) {
+					for (RMResult result : results) {
+						outputStream.writeObject(result);
+						outputStream.flush();
+					}
+				} else {
+					RMResult res = processIfCIDRequired(request);
+					if (res == null) {
+						res = processAtomicRequest(request);
+					}
+
+					outputStream.writeObject(res);
+					outputStream.flush();
+				}
             }
         } catch (IOException e) {
         	e.printStackTrace();
@@ -181,11 +187,22 @@ public class ClientServiceThread implements Runnable {
     	}
     }
     
-    private RMResult processIfComposite(String requestString) {
+    private ArrayList<RMResult> processIfComposite(String requestString) {
     	// Execute a composite method for this request if necessary.
     	// Returns a result, or null if the request corresponds to 
     	// no composite action.
+		ArrayList<RMResult> results = new ArrayList<>();
     	String[] parts = requestString.split(",");
+
+		final String FLIGHT_IP = _rmIps[0];
+		final int FLIGHT_PORT = _rmPorts[0];
+		final String CAR_IP = _rmIps[1];
+		final int CAR_PORT = _rmPorts[1];
+		final String ROOM_IP = _rmIps[2];
+		final int ROOM_PORT = _rmPorts[2];
+		final String CUSTOMER_IP = _rmIps[3];
+		final int CUSTOMER_PORT = _rmPorts[3];
+
     	switch (parts[0]) {
     	case Command.INTERFACE_DELETE_CUSTOMER:
     		//TODO Delete customer from all RMs
@@ -194,13 +211,16 @@ public class ClientServiceThread implements Runnable {
     		//TODO Book an itinerary...
     		break;
     	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
-    		//TODO Query customer over all RMs
+			results.add(processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT));
+			results.add(processAtomicRequest(requestString, CAR_IP, CAR_PORT));
+			results.add(processAtomicRequest(requestString, ROOM_IP, ROOM_PORT));
+			results.add(processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT));
     		break;
     	default:
     		return null;
     	}
     	
-    	return null;
+    	return results;
     }
     
     private String formatRequest(Command command, String[] request) {

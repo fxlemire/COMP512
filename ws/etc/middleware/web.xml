@@ -6,45 +6,45 @@ Inc.//DTD Web Application 2.3//EN"
 <web-app>
 	
 	<env-entry>
-		<env-entry-name>rmIp_f</env-entry-name>
+		<env-entry-name>rmIp_flight</env-entry-name>
 		<env-entry-value>localhost</env-entry-value>
 		<env-entry-type>java.lang.String</env-entry-type>
 	</env-entry>
 	<env-entry>
-		<env-entry-name>rmPort_f</env-entry-name>
+		<env-entry-name>rmPort_flight</env-entry-name>
 		<env-entry-value>38081</env-entry-value>
 		<env-entry-type>java.lang.Integer</env-entry-type>
 	</env-entry>
 	
 	<env-entry>
-		<env-entry-name>rmIp_c</env-entry-name>
+		<env-entry-name>rmIp_car</env-entry-name>
 		<env-entry-value>localhost</env-entry-value>
 		<env-entry-type>java.lang.String</env-entry-type>
 	</env-entry>
 	<env-entry>
-		<env-entry-name>rmPort_c</env-entry-name>
+		<env-entry-name>rmPort_car</env-entry-name>
 		<env-entry-value>38082</env-entry-value>
 		<env-entry-type>java.lang.Integer</env-entry-type>
 	</env-entry>
 
 	<env-entry>
-		<env-entry-name>rmIp_r</env-entry-name>
+		<env-entry-name>rmIp_room</env-entry-name>
 		<env-entry-value>localhost</env-entry-value>
 		<env-entry-type>java.lang.String</env-entry-type>
 	</env-entry>
 	<env-entry>
-		<env-entry-name>rmPort_r</env-entry-name>
+		<env-entry-name>rmPort_room</env-entry-name>
 		<env-entry-value>38083</env-entry-value>
 		<env-entry-type>java.lang.Integer</env-entry-type>
 	</env-entry>
 	
 	<env-entry>
-		<env-entry-name>rmIp_cu</env-entry-name>
+		<env-entry-name>rmIp_customer</env-entry-name>
 		<env-entry-value>localhost</env-entry-value>
 		<env-entry-type>java.lang.String</env-entry-type>
 	</env-entry>
 	<env-entry>
-		<env-entry-name>rmPort_cu</env-entry-name>
+		<env-entry-name>rmPort_customer</env-entry-name>
 		<env-entry-value>38084</env-entry-value>
 		<env-entry-type>java.lang.Integer</env-entry-type>
 	</env-entry>

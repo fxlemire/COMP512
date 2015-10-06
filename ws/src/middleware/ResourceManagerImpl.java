@@ -9,8 +9,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import javax.jws.WebService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -19,31 +17,54 @@ import javax.servlet.ServletContext;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 
-import server.Trace;
-
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	
+	/* Documentation indicates that, while the proxy objects are not
+	 * considered thread-safe, there should be no ill-effects by using
+	 * them the way we do - that is, without using per-request settings,
+	 * sessions or security tokens. Hence, we're not bothering with
+	 * creating a proxy pool or something else.
+	 * 
+	 * http://cxf.apache.org/faq.html#FAQ-AreJAX-WSclientproxiesthreadsafe?
+	 */
+	private ResourceManager flightProxy;
+	private ResourceManager carProxy;
+	private ResourceManager roomProxy;
+	private ResourceManager customerProxy;
+	
+	private ResourceManager getProxyFor(String rm, Context env) 
+	{
+		try
+		{
+			String serviceHost = (String) env.lookup("rmIp_" + rm);
+		    Integer servicePort = (Integer) env.lookup("rmPort_" + rm);
+		    URL wsdlLocation = new URL("http", serviceHost, servicePort, 
+		    		"/rm_" + rm + "/service?wsdl");
+		    return new ResourceManagerImplService(wsdlLocation).getResourceManagerImplPort();
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public ResourceManagerImpl()
 	{
-		ResourceManagerImplService service;
-	    
-		ResourceManager proxy;
-	    
-	    String serviceHost = "localhost";
-	    int servicePort = 38081;
-	    URL wsdlLocation = null;
-	    try {
-	    	wsdlLocation = new URL("http", serviceHost, servicePort, 
-	    		"/rm/service?wsdl");
-	    } catch (MalformedURLException e) {
-	    	throw new RuntimeException(e);
-	    }
-                
-        service = new ResourceManagerImplService(wsdlLocation);
-        
-        proxy = service.getResourceManagerImplPort();
+		Context env = null;
+		try
+		{
+			env = (Context) new InitialContext().lookup("java:comp/env");
+		} 
+		catch (NamingException e)
+		{
+			throw new RuntimeException(e);
+		}
+	    flightProxy = getProxyFor("flight", env);
+	    roomProxy = getProxyFor("room", env);
+	    carProxy = getProxyFor("car", env);
+	    customerProxy = getProxyFor("customer", env);
 	}
 	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {

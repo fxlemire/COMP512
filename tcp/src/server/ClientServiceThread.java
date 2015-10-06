@@ -200,7 +200,10 @@ public class ClientServiceThread implements Runnable {
 
     	switch (parts[0]) {
     	case Command.INTERFACE_DELETE_CUSTOMER:
-    		//TODO Delete customer from all RMs
+			processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT);
+			processAtomicRequest(requestString, CAR_IP, CAR_PORT);
+			processAtomicRequest(requestString, ROOM_IP, ROOM_PORT);
+			result = processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT);
     		break;
     	case Command.INTERFACE_RESERVE_ITINERARY:
     		//TODO Book an itinerary...
@@ -209,21 +212,31 @@ public class ClientServiceThread implements Runnable {
 			ArrayList<String> finalBill = new ArrayList<>();
 
 			result = processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT);
-			ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
-			finalBill.add(0, tempBill.get(0));
-			finalBill = addToBill(finalBill, result);
+			if (!(result.AsString().equals(""))) {
+				ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
+				finalBill.add(0, tempBill.get(0));
+				finalBill = addToBill(finalBill, result);
+			}
 
 			result = processAtomicRequest(requestString, CAR_IP, CAR_PORT);
-			finalBill = addToBill(finalBill, result);
+			if (!(result.AsString().equals(""))) {
+				finalBill = addToBill(finalBill, result);
+			}
 
 			result = processAtomicRequest(requestString, ROOM_IP, ROOM_PORT);
-			finalBill = addToBill(finalBill, result);
+			if (!(result.AsString().equals(""))) {
+				finalBill = addToBill(finalBill, result);
+			}
 
-			finalBill = addBillTotal(finalBill);
+			String resultString = "Customer does not exist.";
 
-			finalBill.add(finalBill.size(), "}");
+			if (finalBill.size() != 0) {
+				finalBill = addBillTotal(finalBill);
 
-			String resultString = String.join("\n", finalBill);
+				finalBill.add(finalBill.size(), "}");
+
+				resultString = String.join("\n", finalBill);
+			}
 
 			result = new RMResult(resultString);
     		break;

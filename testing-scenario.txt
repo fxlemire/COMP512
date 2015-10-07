@@ -23,7 +23,7 @@ reservecar,1,666,Rome
 
 //make sure reservations indeed did not work
 querycustomer,1,10
-querycustomer,1,66
+querycustomer,1,666
 
 //create items
 newflight,1,787,335,800
@@ -116,3 +116,6 @@ querycustomer,1,210
 newroom,5,1234,trente,32
 newroom,5,1234,30,32piasss
 queryroom,5,1234
+
+
+//you might want to 'quit' then restart client and see if data has persisted.

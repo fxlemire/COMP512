@@ -18,6 +18,7 @@ reservecar,1,10,Montreal
 reserveroom,1,10,Singapore
 
 //reserve with a non-existing customer
+newcar,1,Rome,1,40
 reservecar,1,666,Rome
 
 //make sure reservations indeed did not work

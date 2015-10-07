@@ -434,9 +434,8 @@ public class Client {
                         System.out.println("car could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
+                    System.out.print("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
                 }
                 break;
                 

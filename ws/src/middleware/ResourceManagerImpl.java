@@ -324,6 +324,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				throw new RuntimeException();
 			}
 			
+			// Create (if necessary) the customers
+			flightProxy.newCustomerId(id, customerId);
+			carProxy.newCustomerId(id, customerId);
+			roomProxy.newCustomerId(id, customerId);
+			
 			// Proceed with the booking. If any of the reservations fail, just bail out.
 			for (int i = 0 ; i < flightNumbers.size() ; i++) {
 				if (!flightProxy.reserveFlight(id, customerId, 

@@ -821,7 +821,7 @@ public class Client extends WSClient {
     }
 
     private void printErrorMessage(Exception e) {
-        System.out.println("Error: ");
+        System.out.print("Error: ");
         System.out.println(e.getMessage());
     }
 }

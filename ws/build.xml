@@ -6,30 +6,35 @@
 	<property name="rm.flight.name" value="rm_flight"/>
 	<property name="rm.flight.host" value="localhost"/>
 	<property name="rm.flight.port" value="38081"/>
+    <property name="rm.flight.debugport" value="38091"/>
 	
 	<!-- Properties for the car RM -->
 	<property name="rm.car.target" value="server" />
 	<property name="rm.car.name" value="rm_car"/>
 	<property name="rm.car.host" value="localhost"/>
 	<property name="rm.car.port" value="38082"/>
+    <property name="rm.car.debugport" value="38092"/>
 	
 	<!-- Properties for the room RM -->
 	<property name="rm.room.target" value="server" />
 	<property name="rm.room.name" value="rm_room"/>
 	<property name="rm.room.host" value="localhost"/>
 	<property name="rm.room.port" value="38083"/>
+    <property name="rm.room.debugport" value="38093"/>
 	
 	<!-- Properties for the customer RM -->
 	<property name="rm.customer.target" value="server" />
 	<property name="rm.customer.name" value="rm_customer"/>
 	<property name="rm.customer.host" value="localhost"/>
 	<property name="rm.customer.port" value="38084"/>
+    <property name="rm.customer.debugport" value="38094"/>
 
 	<!-- Properties for the middleware -->
 	<property name="mw.target" value="middleware" />
 	<property name="mw.name" value="mw"/>
 	<property name="mw.host" value="localhost" />
 	<property name="mw.port" value="38080"/>
+    <property name="mw.debugport" value="38090"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -120,6 +125,8 @@
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build"/>
             </classpath>
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:server=y,transport=dt_socket,address=${service.debugport},suspend=n"/>
             <jvmarg value="-Djava.security.policy=${basedir}/etc/${service.target}/server.policy"/>
             <arg value="${service.name}"/>
             <arg value="${service.port}"/>

@@ -1,0 +1,117 @@
+// problem? if flight is nonexistent, seats=0 instead of nonexistent msg
+
+//query non-existent customer
+querycustomer,1,10
+
+//wrong number of arguments
+newcustomerid,10
+
+//create new customer
+newcustomer,1
+
+//create new customer with specific id
+newcustomerid,1,10
+
+//reserve items that do not exist
+reserveflight,1,10,787
+reservecar,1,10,Montreal
+reserveroom,1,10,Singapore
+
+//reserve with a non-existing customer
+reservecar,1,666,Rome
+
+//make sure reservations indeed did not work
+querycustomer,1,10
+querycustomer,1,66
+
+//create items
+newflight,1,787,335,800
+newcar,1,Montreal,1,25
+newroom,1,Singapore,100,170
+newcar,1,Paris,100,50
+
+//reserve flight, then try to delete
+reserveflight,1,10,787
+deleteflight,1,787
+
+//delete customer, then delete flight
+deletecustomer,1,10
+deleteflight,1,787
+querycustomer,1,10
+
+newcustomerid,1,10
+newcustomerid,2,20
+newflight,1,787,335,800
+
+//reserve 2 cars in Montreal
+querycar,1,Montreal
+reservecar,1,20,Montreal
+querycar,1,Montreal
+//should not work
+reservecar,1,10,Montreal
+deletecustomer,2,20
+//should work
+reservecar,1,10,Montreal
+
+//query items
+queryflight,1,787
+querycar,1,Montreal
+querycar,2,Paris
+queryroom,1,Singapore
+
+//reserve items
+reserveflight,1,10,787
+queryflight,1,787
+reservecar,1,10,Paris
+querycar,2,Paris
+reserveroom,1,10,Singapore
+queryroom,1,Singapore
+
+//reserve non-existing items
+reservecar,1,10,Tokyo
+reserveroom,1,10,Tokyo
+reserveflight,1,10,666
+
+//reserve same item
+reservecar,1,10,Paris
+
+querycustomer,1,10
+
+//itinerary
+newflight,1,938,250,1000
+newflight,2,939,275,1100
+newflight,3,940,300,1200
+newcar,2,Baltimore,10,50
+newroom,3,Baltimore,50,200
+newcustomerid,1,210
+itinerary,1,210,938,939,940,Baltimore,true,true
+
+querycustomer,1,210
+
+newflight,1,111,1,100000
+newcustomerid,1,1
+reserveflight,1,1,111
+newcustomerid,2,2
+//should not work since flight has no more seats
+itinerary,1,2,938,939,1,Baltimore,true,true
+
+newcar,3,Vancouver,1,1000
+newroom,4,Vancouver,1,1000
+itinerary,1,210,938,939,940,Vancouver,true,true
+//should not work, room car now empty
+itinerary,1,210,938,939,940,Vancouver,true,true
+//should work
+itinerary,1,210,938,939,940,Vancouver,false,false
+//should not work
+itinerary,1,210,938,939,940,Vancouver,false,true
+itinerary,1,210,938,939,940,Vancouver,true,false
+newcar,4,Vancouver,1,1000
+//now should work
+itinerary,1,210,938,939,940,Vancouver,true,false
+
+querycustomer,1,210
+
+//invalid types (string when int)
+newroom,5,1234,trente,32
+newroom,5,1234,30,32piasss
+queryroom,5,1234

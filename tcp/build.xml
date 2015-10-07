@@ -106,6 +106,8 @@
     <target name="start-Middleware">
         <echo message="Starting Middleware... "/>
         <java fork="true" classname="server.Middleware">
+            <jvmarg  value="-Xdebug" />
+            <jvmarg  value="-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005" />
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

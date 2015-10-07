@@ -109,7 +109,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         //   the old customer is deleted and then the item is deleted. This will
         //   write a reservation for an unexisting item.
         synchronized (m_itemHT) {
-        
 	        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 	        if (cust == null) {
 	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
@@ -130,13 +129,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	        } else {
 	            // Do reservation.
 	            cust.reserve(key, location, item.getPrice());
-	            
 	            writeData(id, cust.getKey(), cust);
 	            
 	            // Decrease the number of available items in the storage.
 	            item.setCount(item.getCount() - 1);
 	            item.setReserved(item.getReserved() + 1);
-	            
 	            Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
 	                    + key + ", " + location + ") OK.");
 	            return true;

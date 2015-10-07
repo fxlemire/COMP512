@@ -1,13 +1,9 @@
 package server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class ClientServiceThread implements Runnable {
     private int[] _rmPorts;
@@ -31,34 +27,31 @@ public class ClientServiceThread implements Runnable {
     public Thread getRunner() { return _runner; }
 
     public void run() {
-        try {
-        	ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
-        	outputStream.flush();
-        	
-            DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
-            
-            while (true) {
-	            String request = inputStream.readUTF();
-	            
-	            Trace.info("Received request: " + request);
-	
-	            ArrayList<RMResult> results = processIfComposite(request);
-	            if (results != null) {
-					for (RMResult result : results) {
-						outputStream.writeObject(result);
-						outputStream.flush();
-					}
-				} else {
-					RMResult res = processIfCIDRequired(request);
-					if (res == null) {
-						res = processAtomicRequest(request);
-					}
+		try {
+			ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
+			outputStream.flush();
 
-					outputStream.writeObject(res);
-					outputStream.flush();
+			DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
+
+			while (true) {
+				String request = inputStream.readUTF();
+
+				Trace.info("Received request: " + request);
+
+				RMResult response = processIfComposite(request);
+				if (response == null) {
+					response = processIfCIDRequired(request);
+					if (response == null) {
+						response = processAtomicRequest(request);
+					}
 				}
-            }
-        } catch (IOException e) {
+
+				outputStream.writeObject(response);
+				outputStream.flush();
+			}
+		} catch (EOFException eof) {
+			Trace.info("A client closed a connection.");
+		} catch (IOException e) {
         	e.printStackTrace();
         }
     }
@@ -68,10 +61,11 @@ public class ClientServiceThread implements Runnable {
     	// exists, and if yes creating it at the relevant RM as necessary.
     	
     	Integer cid = getCustomerId(requestString);
-    	RMResult existenceCheck = processAtomicRequest(Command.SERVER_CHECK_CUSTOMER_EXISTS + 
+    	RMResult existenceCheck = processAtomicRequest(Command.SERVER_CHECK_CUSTOMER_EXISTS +
     													",1," + cid);
-    	if (existenceCheck.IsError())
-    		return existenceCheck;
+    	if (existenceCheck.IsError()) {
+			return existenceCheck;
+		}
     	
     	if (!existenceCheck.AsBool()) {
     		RMResult failure = new RMResult(new Exception("Customer " + cid + " does not exist."));
@@ -110,7 +104,6 @@ public class ClientServiceThread implements Runnable {
 
             String[] request = requestString.split(",");
             Command command = Command.getCommandForInterfaceCall(request[0]);
-
             String requestForRm = formatRequest(command, request);
             outputStream.writeUTF(requestForRm);
             outputStream.flush();
@@ -167,6 +160,7 @@ public class ClientServiceThread implements Runnable {
     	case Command.INTERFACE_RESERVE_ROOM:
     		return 2;
     	case Command.INTERFACE_NEW_CUSTOMER:
+		case Command.INTERFACE_NEW_CUSTOMER_ID:
     	case Command.SERVER_CHECK_CUSTOMER_EXISTS:
     		return 3;
         default:
@@ -187,40 +181,105 @@ public class ClientServiceThread implements Runnable {
     	}
     }
     
-    private ArrayList<RMResult> processIfComposite(String requestString) {
+    private RMResult processIfComposite(String requestString) {
     	// Execute a composite method for this request if necessary.
     	// Returns a result, or null if the request corresponds to 
     	// no composite action.
-		ArrayList<RMResult> results = new ArrayList<>();
+		RMResult result = null;
     	String[] parts = requestString.split(",");
 
-		final String FLIGHT_IP = _rmIps[0];
-		final int FLIGHT_PORT = _rmPorts[0];
-		final String CAR_IP = _rmIps[1];
-		final int CAR_PORT = _rmPorts[1];
-		final String ROOM_IP = _rmIps[2];
-		final int ROOM_PORT = _rmPorts[2];
-		final String CUSTOMER_IP = _rmIps[3];
-		final int CUSTOMER_PORT = _rmPorts[3];
-
     	switch (parts[0]) {
-    	case Command.INTERFACE_DELETE_CUSTOMER:
-    		//TODO Delete customer from all RMs
+		case Command.INTERFACE_DELETE_CUSTOMER: {
+			for (int i = 0; i < 4; ++i) {
+				result = processAtomicRequest(requestString, _rmIps[i], _rmPorts[i]);
+			}
+		}
+			break;
+		case Command.INTERFACE_RESERVE_ITINERARY: {
+			//requestString = "command, id, cid, flight1, ..., flightn, location, isCarDesired, isRoomDesired"
+			ArrayList<String> flightNumbers = new ArrayList<>(Arrays.asList(requestString.split(",")));
+			flightNumbers.remove(0);
+			String id = flightNumbers.remove(0).trim();
+			String customerId = flightNumbers.remove(0).trim();
+			boolean isRoomDesired = Boolean.parseBoolean(flightNumbers.remove(flightNumbers.size() - 1).trim());
+			boolean isCarDesired = Boolean.parseBoolean(flightNumbers.remove(flightNumbers.size() - 1).trim());
+			String location = flightNumbers.remove(flightNumbers.size() - 1).trim();
+
+			for (String flightNumber: flightNumbers) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_FLIGHT + ", " + id + ", " + flightNumber.trim(), _rmIps[0], _rmPorts[0]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			if (isCarDesired) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_CARS + ", " + id + ", " + location, _rmIps[1], _rmPorts[1]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			if (isRoomDesired) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_ROOMS + ", " + id + ", " + location, _rmIps[2], _rmPorts[2]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			for (String flightNumber: flightNumbers) {
+				String command = Command.INTERFACE_RESERVE_FLIGHT + ", " + id + ", " + customerId + ", " + flightNumber.trim();
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+
+			if (isCarDesired) {
+				String command = Command.INTERFACE_RESERVE_CAR + ", " + id + ", " + customerId + ", " + location;
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+
+			if (isRoomDesired) {
+				String command = Command.INTERFACE_RESERVE_ROOM + ", " + id + ", " + customerId + ", " + location;
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+		}
     		break;
-    	case Command.INTERFACE_RESERVE_ITINERARY:
-    		//TODO Book an itinerary...
-    		break;
-    	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
-			results.add(processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT));
-			results.add(processAtomicRequest(requestString, CAR_IP, CAR_PORT));
-			results.add(processAtomicRequest(requestString, ROOM_IP, ROOM_PORT));
-			results.add(processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT));
+    	case Command.INTERFACE_QUERY_CUSTOMER_INFO: {
+			ArrayList<String> finalBill = new ArrayList<>();
+
+			//i < 3 to exclude customer rm
+			for (int i = 0; i < 3; ++i) {
+				result = processAtomicRequest(requestString, _rmIps[i], _rmPorts[i]);
+				if (!(result.AsString().equals(""))) {
+					finalBill = addToBill(finalBill, result);
+				}
+			}
+
+			String resultString = "Customer either does not exist or has not made any reservation yet.";
+
+			if (finalBill.size() != 0) {
+				finalBill = addBillTotal(finalBill);
+
+				finalBill.add(finalBill.size(), "}");
+
+				resultString = String.join("\n", finalBill);
+			}
+
+			result = new RMResult(resultString);
+		}
     		break;
     	default:
-    		return null;
+			break;
     	}
-    	
-    	return results;
+
+		return result;
     }
     
     private String formatRequest(Command command, String[] request) {
@@ -233,4 +292,30 @@ public class ClientServiceThread implements Runnable {
 
         return requestForRm;
     }
+
+	private ArrayList<String> addToBill(ArrayList<String> finalBill, RMResult result) {
+		ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
+
+		if (finalBill.size() == 0) {
+			finalBill.add(0, tempBill.get(0));
+		}
+
+		tempBill.remove(0);
+		tempBill.remove(tempBill.size() - 1);
+		finalBill.addAll(tempBill);
+
+		return finalBill;
+	}
+
+	private ArrayList<String> addBillTotal(ArrayList<String> bill) {
+		int total = 0;
+
+		for (int i = 1; i < bill.size(); ++i) {
+			total += Integer.parseInt(bill.get(i).split("\\$")[1]);
+		}
+
+		bill.add(bill.size(), "Total: $" + total);
+
+		return bill;
+	}
 }

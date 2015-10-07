@@ -41,6 +41,7 @@ public class Command {
     public final static String SERVER_ADD_FLIGHT = "addFlight";
     public final static String SERVER_ADD_CARS = "addCars";
     public final static String SERVER_ADD_ROOMS = "addRooms";
+    public final static String SERVER_CHECK_CUSTOMER_EXISTS = "checkCustomerExists";
     public final static String SERVER_NEW_CUSTOMER = "newCustomer";
     public final static String SERVER_NEW_CUSTOMER_ID = "newCustomerId";
     public final static String SERVER_DELETE_FLIGHT  = "deleteFlight";
@@ -59,7 +60,6 @@ public class Command {
     public final static String SERVER_RESERVE_ROOM = "reserveRoom";
     public final static String SERVER_RESERVE_ITINERARY = "reserveItinerary";
     public final static String SERVER_UNKNOWN_COMMAND = "unknownCommand";
-    public final static String SERVER_CHECK_CUSTOMER_EXISTS = "checkCustomerExists";
 
     public final static String INTERFACE_ADD_FLIGHT = "newflight";
     public final static String INTERFACE_ADD_CARS = "newcar";
@@ -85,6 +85,7 @@ public class Command {
     public final static short ARGUMENTS_ADD_FLIGHT = 4;
     public final static short ARGUMENTS_ADD_CARS = 4;
     public final static short ARGUMENTS_ADD_ROOMS = 4;
+    public final static short ARGUMENTS_CHECK_CUSTOMER_EXISTS = 2;
     public final static short ARGUMENTS_NEW_CUSTOMER = 1;
     public final static short ARGUMENTS_NEW_CUSTOMER_ID = 2;
     public final static short ARGUMENTS_DELETE_FLIGHT  = 2;
@@ -207,6 +208,11 @@ public class Command {
                 command.setArguments(ARGUMENTS_RESERVE_ITINERARY);
                 command.setCommand(INTERFACE.RESERVE_ITINERARY);
                 command.setMethod(SERVER_RESERVE_ITINERARY);
+                break;
+            case SERVER_CHECK_CUSTOMER_EXISTS:
+                command.setArguments(ARGUMENTS_CHECK_CUSTOMER_EXISTS);
+                command.setCommand(INTERFACE.UNKNOWN_COMMAND);
+                command.setMethod(SERVER_CHECK_CUSTOMER_EXISTS);
                 break;
             default:
                 command.setArguments(ARGUMENTS_UNKNOWN_COMMAND);

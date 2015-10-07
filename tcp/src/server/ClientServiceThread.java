@@ -189,15 +189,69 @@ public class ClientServiceThread implements Runnable {
     	String[] parts = requestString.split(",");
 
     	switch (parts[0]) {
-    	case Command.INTERFACE_DELETE_CUSTOMER:
+		case Command.INTERFACE_DELETE_CUSTOMER: {
 			for (int i = 0; i < 4; ++i) {
 				result = processAtomicRequest(requestString, _rmIps[i], _rmPorts[i]);
 			}
+		}
+			break;
+		case Command.INTERFACE_RESERVE_ITINERARY: {
+			//requestString = "command, id, cid, flight1, ..., flightn, location, isCarDesired, isRoomDesired"
+			ArrayList<String> flightNumbers = new ArrayList<>(Arrays.asList(requestString.split(",")));
+			flightNumbers.remove(0);
+			String id = flightNumbers.remove(0).trim();
+			String customerId = flightNumbers.remove(0).trim();
+			boolean isRoomDesired = Boolean.parseBoolean(flightNumbers.remove(flightNumbers.size() - 1).trim());
+			boolean isCarDesired = Boolean.parseBoolean(flightNumbers.remove(flightNumbers.size() - 1).trim());
+			String location = flightNumbers.remove(flightNumbers.size() - 1).trim();
+
+			for (String flightNumber: flightNumbers) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_FLIGHT + ", " + id + ", " + flightNumber.trim(), _rmIps[0], _rmPorts[0]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			if (isCarDesired) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_CARS + ", " + id + ", " + location, _rmIps[1], _rmPorts[1]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			if (isRoomDesired) {
+				result = processAtomicRequest(Command.INTERFACE_QUERY_ROOMS + ", " + id + ", " + location, _rmIps[2], _rmPorts[2]);
+				if (result.AsInt() <= 0) {
+					return new RMResult(false);
+				}
+			}
+
+			for (String flightNumber: flightNumbers) {
+				String command = Command.INTERFACE_RESERVE_FLIGHT + ", " + id + ", " + customerId + ", " + flightNumber.trim();
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+
+			if (isCarDesired) {
+				String command = Command.INTERFACE_RESERVE_CAR + ", " + id + ", " + customerId + ", " + location;
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+
+			if (isRoomDesired) {
+				String command = Command.INTERFACE_RESERVE_ROOM + ", " + id + ", " + customerId + ", " + location;
+				result = processIfCIDRequired(command);
+				if (!result.AsBool()) {
+					return result;
+				}
+			}
+		}
     		break;
-    	case Command.INTERFACE_RESERVE_ITINERARY:
-    		//TODO Book an itinerary...
-    		break;
-    	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
+    	case Command.INTERFACE_QUERY_CUSTOMER_INFO: {
 			ArrayList<String> finalBill = new ArrayList<>();
 
 			//i < 3 to exclude customer rm
@@ -219,6 +273,7 @@ public class ClientServiceThread implements Runnable {
 			}
 
 			result = new RMResult(resultString);
+		}
     		break;
     	default:
 			break;

@@ -177,23 +177,27 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	public String queryCustomerInfo(int id, int customerId) {
 		ResourceManager customerProxy = customerProxies.checkOut();
-
-		if (!customerProxy.checkCustomerExistence(id, customerId))
+		boolean exists = customerProxy.checkCustomerExistence(id, customerId);
+		customerProxies.checkIn(customerProxy);
+		
+		if (!exists)
 		{
-			customerProxies.checkIn(customerProxy);
 			return "The customer ID does not exist.";
 		}
 
-		ArrayList<String> finalBill = new ArrayList<>();
+		ArrayList<String> finalBill = new ArrayList<String>();
 
 		ResourceManager flightProxy = flightProxies.checkOut();
 		finalBill = updateBill(finalBill, flightProxy, id, customerId);
-
+		flightProxies.checkIn(flightProxy);
+		
 		ResourceManager carProxy = carProxies.checkOut();
 		finalBill = updateBill(finalBill, carProxy, id, customerId);
-
+		carProxies.checkIn(carProxy);
+		
 		ResourceManager roomProxy = roomProxies.checkOut();
 		finalBill = updateBill(finalBill, roomProxy, id, customerId);
+		roomProxies.checkIn(roomProxy);
 
 		String resultString = "Customer has not made any reservation yet.";
 
@@ -201,8 +205,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			finalBill = addBillTotal(finalBill);
 
 			finalBill.add(finalBill.size(), "}");
-
-			resultString = String.join("\n", finalBill);
+			
+			StringBuilder sb = new StringBuilder();
+			for(String s: finalBill)
+			{
+				sb.append(s);
+				sb.append("\n");
+			}
+			
+			resultString = sb.toString();
 		}
 
 		return resultString;
@@ -301,7 +312,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			// This is okay of the purposes of the first assignment.
 			
 			for (int i = 0 ; i < flightNumbers.size() ; i++) {
-				if (flightProxy.queryFlight(id, (Integer) flightNumbers.elementAt(i)) == 0)
+				if (flightProxy.queryFlight(id, Integer.parseInt((String) flightNumbers.elementAt(i))) == 0)
 				{
 					throw new RuntimeException();
 				}
@@ -315,7 +326,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			
 			// Proceed with the booking. If any of the reservations fail, just bail out.
 			for (int i = 0 ; i < flightNumbers.size() ; i++) {
-				if (!flightProxy.reserveFlight(id, customerId, (Integer) flightNumbers.elementAt(i)))
+				if (!flightProxy.reserveFlight(id, customerId, 
+						Integer.parseInt((String) flightNumbers.elementAt(i))))
 				{
 					throw new RuntimeException();
 				}

@@ -7,10 +7,6 @@ package server;
 
 import java.util.*;
 import javax.jws.WebService;
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {	
@@ -46,23 +42,30 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Delete the entire item.
     protected boolean deleteItem(int id, String key) {
         Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
-        ReservableItem curObj = (ReservableItem) readData(id, key);
-        // Check if there is such an item in the storage.
-        if (curObj == null) {
-            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: " 
-                    + " item doesn't exist.");
-            return false;
-        } else {
-            if (curObj.getReserved() == 0) {
-                removeData(id, curObj.getKey());
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
-                return true;
-            }
-            else {
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") failed: "
-                        + "some customers have reserved it.");
-                return false;
-            }
+
+    	// Potential data corruption: we test getReserved
+    	// and find 0, but before we delete it, another thread makes
+    	// a reservation on the item. Hence, we synchronize this access.
+        synchronized (m_itemHT) {
+        	
+	        ReservableItem curObj = (ReservableItem) readData(id, key);
+	        // Check if there is such an item in the storage.
+	        if (curObj == null) {
+	            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: " 
+	                    + " item doesn't exist.");
+	            return false;
+	        } else {
+	            if (curObj.getReserved() == 0) {
+	                removeData(id, curObj.getKey());
+	                Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
+	                return true;
+	            }
+	            else {
+	                Trace.info("RM::deleteItem(" + id + ", " + key + ") failed: "
+	                        + "some customers have reserved it.");
+	                return false;
+	            }
+	        }
         }
     }
     
@@ -96,35 +99,48 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
                 + key + ", " + location + ") called.");
         // Read customer object if it exists (and read lock it).
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                   + key + ", " + location + ") failed: customer doesn't exist.");
-            return false;
-        } 
         
-        // Check if the item is available.
-        ReservableItem item = (ReservableItem) readData(id, key);
-        if (item == null) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") failed: item doesn't exist.");
-            return false;
-        } else if (item.getCount() == 0) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") failed: no more items.");
-            return false;
-        } else {
-            // Do reservation.
-            cust.reserve(key, location, item.getPrice());
-            writeData(id, cust.getKey(), cust);
-            
-            // Decrease the number of available items in the storage.
-            item.setCount(item.getCount() - 1);
-            item.setReserved(item.getReserved() + 1);
-            
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") OK.");
-            return true;
+        // Potential concurrency errors:
+        // - We read the customer, and someone else deletes it while we reserve.
+        //   In that case, the delete would be "undone".
+        // - Two threads end up in the "do reservation" branch but only one item
+        //   remains, leading to overbooking.
+        // - Item has one reservation, but before performing the new reservation,
+        //   the old customer is deleted and then the item is deleted. This will
+        //   write a reservation for an unexisting item.
+        synchronized (m_itemHT) {
+        
+	        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+	        if (cust == null) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                   + key + ", " + location + ") failed: customer doesn't exist.");
+	            return false;
+	        } 
+	        
+	        // Check if the item is available.
+	        ReservableItem item = (ReservableItem) readData(id, key);
+	        if (item == null) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") failed: item doesn't exist.");
+	            return false;
+	        } else if (item.getCount() == 0) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") failed: no more items.");
+	            return false;
+	        } else {
+	            // Do reservation.
+	            cust.reserve(key, location, item.getPrice());
+	            
+	            writeData(id, cust.getKey(), cust);
+	            
+	            // Decrease the number of available items in the storage.
+	            item.setCount(item.getCount() - 1);
+	            item.setReserved(item.getReserved() + 1);
+	            
+	            Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") OK.");
+	            return true;
+	        }
         }
     }
     
@@ -139,6 +155,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                              int numSeats, int flightPrice) {
         Trace.info("RM::addFlight(" + id + ", " + flightNumber 
                 + ", $" + flightPrice + ", " + numSeats + ") called.");
+        
+        // There are no sync issues here. Maybe there was no flight
+        // when we read, but then a new one appeared. In this case
+        // we have to keep one or the other anyways.
+        // Maybe there was a flight when we read, but then it was deleted
+        // Then it will be restored. In any case, no data will be
+        // corrupted.
+        
         Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
         if (curObj == null) {
             // Doesn't exist; add it.
@@ -152,11 +176,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (flightPrice > 0) {
                 curObj.setPrice(flightPrice);
             }
+            
             writeData(id, curObj.getKey(), curObj);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber 
                     + ", $" + flightPrice + ", " + numSeats + ") OK: "
                     + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
         }
+        
+        
         return(true);
     }
 
@@ -331,6 +358,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     
     public boolean newCustomerId(int id, int customerId) {
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
+        
+        // There are no sync issues here. If there was no customer but one
+        // was created just before we write ours, we overwrite it and nothing
+        // harmful happens.
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             cust = new Customer(customerId);
@@ -355,7 +386,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return false;
         } else {            
             // Increase the reserved numbers of all reservable items that 
-            // the customer reserved. 
+            // the customer reserved.
+        	
             RMHashtable reservationHT = cust.getReservations();
             for (Enumeration e = reservationHT.keys(); e.hasMoreElements();) {        
                 String reservedKey = (String) (e.nextElement());

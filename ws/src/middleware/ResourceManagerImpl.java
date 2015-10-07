@@ -176,8 +176,36 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public String queryCustomerInfo(int id, int customerId) {
-		// TODO Auto-generated method stub
-		return null;
+		ResourceManager customerProxy = customerProxies.checkOut();
+
+		if (!customerProxy.checkCustomerExistence(id, customerId))
+		{
+			customerProxies.checkIn(customerProxy);
+			return "The customer ID does not exist.";
+		}
+
+		ArrayList<String> finalBill = new ArrayList<>();
+
+		ResourceManager flightProxy = flightProxies.checkOut();
+		finalBill = updateBill(finalBill, flightProxy, id, customerId);
+
+		ResourceManager carProxy = carProxies.checkOut();
+		finalBill = updateBill(finalBill, carProxy, id, customerId);
+
+		ResourceManager roomProxy = roomProxies.checkOut();
+		finalBill = updateBill(finalBill, roomProxy, id, customerId);
+
+		String resultString = "Customer has not made any reservation yet.";
+
+		if (finalBill.size() != 0) {
+			finalBill = addBillTotal(finalBill);
+
+			finalBill.add(finalBill.size(), "}");
+
+			resultString = String.join("\n", finalBill);
+		}
+
+		return resultString;
 	}
 
 	public int queryFlight(int id, int flightNumber) {
@@ -341,5 +369,41 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		boolean result = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
 		return result;
+	}
+
+	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {
+		String bill = proxy.queryCustomerInfo(id, customerId);
+
+		if (!(bill.equals(""))) {
+			finalBill = addToBill(finalBill, bill);
+		}
+		
+		return finalBill;
+	}
+
+	private ArrayList<String> addToBill(ArrayList<String> finalBill, String bill) {
+		ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(bill.split("\n")));
+
+		if (finalBill.size() == 0) {
+			finalBill.add(0, tempBill.get(0));
+		}
+
+		tempBill.remove(0);
+		tempBill.remove(tempBill.size() - 1);
+		finalBill.addAll(tempBill);
+
+		return finalBill;
+	}
+
+	private ArrayList<String> addBillTotal(ArrayList<String> bill) {
+		int total = 0;
+
+		for (int i = 1; i < bill.size(); ++i) {
+			total += Integer.parseInt(bill.get(i).split("\\$")[1]);
+		}
+
+		bill.add(bill.size(), "Total: $" + total);
+
+		return bill;
 	}
 }

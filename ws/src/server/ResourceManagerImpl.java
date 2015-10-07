@@ -44,23 +44,26 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Delete the entire item.
     protected boolean deleteItem(int id, String key) {
         Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
-        ReservableItem curObj = (ReservableItem) readData(id, key);
-        // Check if there is such an item in the storage.
-        if (curObj == null) {
-            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: " 
-                    + " item doesn't exist.");
-            return false;
-        } else {
-            if (curObj.getReserved() == 0) {
-                removeData(id, curObj.getKey());
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
-                return true;
-            }
-            else {
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") failed: "
-                        + "some customers have reserved it.");
-                return false;
-            }
+        
+        synchronized (m_itemHT) {
+	        ReservableItem curObj = (ReservableItem) readData(id, key);
+	        // Check if there is such an item in the storage.
+	        if (curObj == null) {
+	            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: " 
+	                    + " item doesn't exist.");
+	            return false;
+	        } else {
+	            if (curObj.getReserved() == 0) {
+	                removeData(id, curObj.getKey());
+	                Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
+	                return true;
+	            }
+	            else {
+	                Trace.info("RM::deleteItem(" + id + ", " + key + ") failed: "
+	                        + "some customers have reserved it.");
+	                return false;
+	            }
+	        }
         }
     }
     
@@ -91,39 +94,42 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Reserve an item.
     protected boolean reserveItem(int id, int customerId, 
                                   String key, String location) {
-        Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
-                + key + ", " + location + ") called.");
-        // Read customer object if it exists (and read lock it).
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                   + key + ", " + location + ") failed: customer doesn't exist.");
-            return false;
-        } 
-        
-        // Check if the item is available.
-        ReservableItem item = (ReservableItem) readData(id, key);
-        if (item == null) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") failed: item doesn't exist.");
-            return false;
-        } else if (item.getCount() == 0) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") failed: no more items.");
-            return false;
-        } else {
-            // Do reservation.
-            cust.reserve(key, location, item.getPrice());
-            writeData(id, cust.getKey(), cust);
-            
-            // Decrease the number of available items in the storage.
-            item.setCount(item.getCount() - 1);
-            item.setReserved(item.getReserved() + 1);
-            
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
-                    + key + ", " + location + ") OK.");
-            return true;
-        }
+    	
+    	synchronized (m_itemHT) {
+	        Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                + key + ", " + location + ") called.");
+	        // Read customer object if it exists (and read lock it).
+	        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+	        if (cust == null) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                   + key + ", " + location + ") failed: customer doesn't exist.");
+	            return false;
+	        } 
+	        
+	        // Check if the item is available.
+	        ReservableItem item = (ReservableItem) readData(id, key);
+	        if (item == null) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") failed: item doesn't exist.");
+	            return false;
+	        } else if (item.getCount() == 0) {
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") failed: no more items.");
+	            return false;
+	        } else {
+	            // Do reservation.
+	            cust.reserve(key, location, item.getPrice());
+	            writeData(id, cust.getKey(), cust);
+	            
+	            // Decrease the number of available items in the storage.
+	            item.setCount(item.getCount() - 1);
+	            item.setReserved(item.getReserved() + 1);
+	            
+	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
+	                    + key + ", " + location + ") OK.");
+	            return true;
+	        }
+    	}
     }
     
     

@@ -1,9 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="help" name="project">
 
-    <property name="service.name" value="rm"/>
-    <property name="service.host" value="localhost"/>
-    <property name="service.port" value="8080"/>
+	<!-- Properties for the flight RM -->
+	<property name="rm.flight.target" value="server" />
+	<property name="rm.flight.name" value="rm_flight"/>
+	<property name="rm.flight.host" value="localhost"/>
+	<property name="rm.flight.port" value="38081"/>
+    <property name="rm.flight.debugport" value="38091"/>
+	
+	<!-- Properties for the car RM -->
+	<property name="rm.car.target" value="server" />
+	<property name="rm.car.name" value="rm_car"/>
+	<property name="rm.car.host" value="localhost"/>
+	<property name="rm.car.port" value="38082"/>
+    <property name="rm.car.debugport" value="38092"/>
+	
+	<!-- Properties for the room RM -->
+	<property name="rm.room.target" value="server" />
+	<property name="rm.room.name" value="rm_room"/>
+	<property name="rm.room.host" value="localhost"/>
+	<property name="rm.room.port" value="38083"/>
+    <property name="rm.room.debugport" value="38093"/>
+	
+	<!-- Properties for the customer RM -->
+	<property name="rm.customer.target" value="server" />
+	<property name="rm.customer.name" value="rm_customer"/>
+	<property name="rm.customer.host" value="localhost"/>
+	<property name="rm.customer.port" value="38084"/>
+    <property name="rm.customer.debugport" value="38094"/>
+
+	<!-- Properties for the middleware -->
+	<property name="mw.target" value="middleware" />
+	<property name="mw.name" value="mw"/>
+	<property name="mw.host" value="localhost" />
+	<property name="mw.port" value="38080"/>
+    <property name="mw.debugport" value="38090"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -12,7 +43,11 @@
             <include name="*.jar"/>
         </fileset>
     </path>
-
+	
+	<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
+        <classpath refid="jaxws.classpath"/>
+    </taskdef>
+	
     <target name="clean">
         <delete dir="${basedir}/build" includeEmptyDirs="true"/>
     </target>
@@ -29,14 +64,15 @@
         <classpath refid="jaxws.classpath"/>
     </taskdef>
 
-    <target name="build-server" depends="setup">
+	<!-- Build a webservice according to a provided target. -->
+    <target name="build-ws" depends="setup">
         <annotationProcessing
                 fork="true"
                 debug="true"
                 verbose="${verbose}"
                 destdir="${basedir}/build/classes"
                 srcdir="${basedir}/src"
-                includes="server/**"
+                includes="${service.target}/**"
                 sourceDestDir="${basedir}/build/classes"
                 procOnly="false"
                 sourcepath="${basedir}/src">
@@ -47,19 +83,31 @@
         </annotationProcessing>
     </target>
 
+	<!-- Build the main class of a web server according to a provided target. -->
+	<target name="build-main">
+		<javac
+			fork="true"
+			srcdir="${basedir}/src/main/${service.target}"
+			destdir="${basedir}/build/">
+			<classpath refid="jaxws.classpath"/>
+		</javac>
+	</target>
+	
+	<!-- Create the WAR file for a given target webservice. -->
     <target name="create-war">
         <war 
             warfile="${basedir}/build/war/${service.name}.war" 
-            webxml="etc/web.xml">
-            <webinf dir="${basedir}/etc" includes="sun-jaxws.xml"/>
+            webxml="etc/${service.target}/web.xml">
+            <webinf dir="${basedir}/etc/${service.target}" includes="sun-jaxws.xml"/>
             <zipfileset
-                    dir="${basedir}/etc"
+                    dir="${basedir}/etc/${service.target}"
                     includes="*.wsdl, *.xsd"
                     prefix="WEB-INF/wsdl"/>
             <classes dir="${basedir}/build/classes"/>
         </war>
     </target>
 
+	<!-- Deploy the WAR file for a given target webservice. -->
     <target name="deploy-war">
         <delete dir="${basedir}/webapps/${service.name}" 
             includeEmptyDirs="true"/>
@@ -69,31 +117,102 @@
             dest="${basedir}/webapps/${service.name}"/>
     </target>
     
-    <target name="start-tomcat">
+	<!-- Start tomcat with a given webservice. -->
+    <target name="start-tomcat" depends="build-main">
         <echo message="Starting Tomcat and deploying service ... "/>
-        <java fork="true" classname="server.ws.Main">
+        <java fork="true" classname="main.${service.target}.Main">
             <classpath>
                 <path refid="jaxws.classpath"/>
-                <pathelement location="${basedir}/build/classes"/>
+                <pathelement location="${basedir}/build"/>
             </classpath>
-            <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:server=y,transport=dt_socket,address=${service.debugport},suspend=n"/>
+            <jvmarg value="-Djava.security.policy=${basedir}/etc/${service.target}/server.policy"/>
             <arg value="${service.name}"/>
             <arg value="${service.port}"/>
             <arg value="${basedir}/webapps"/>
         </java>
     </target>
 
-    <target name="server" depends="setup">
-        <antcall target="clean"/>
-        <antcall target="build-server"/>
-        <antcall target="create-war"/>
+	<!--- Generate and start a web service.  The service.* properties
+	must be set. -->
+	<target name="ws">
+		<antcall target="build-ws"/>
+        <antcall target="create-war" />
         <antcall target="deploy-war"/>
-        <antcall target="start-tomcat"/>        
-    </target>
-
-    <taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
-        <classpath refid="jaxws.classpath"/>
-    </taskdef>
+        <antcall target="start-tomcat"/>  
+	</target>
+	
+	<!-- Generate the middleware, from the WSDLs of the existing RMs. -->
+	<target name="generate-middleware">
+		<wsimport
+            quiet="true"
+            keep="true"
+            destdir="${basedir}/build/classes"
+            package="middleware"
+            wsdl="http://${rm.flight.host}:${rm.flight.port}/${rm.flight.name}/service?wsdl">
+        </wsimport>
+		<wsimport
+            quiet="true"
+            keep="true"
+            destdir="${basedir}/build/classes"
+            package="middleware"
+            wsdl="http://${rm.car.host}:${rm.car.port}/${rm.car.name}/service?wsdl">
+        </wsimport>
+		<wsimport
+            quiet="true"
+            keep="true"
+            destdir="${basedir}/build/classes"
+            package="middleware"
+            wsdl="http://${rm.room.host}:${rm.room.port}/${rm.room.name}/service?wsdl">
+        </wsimport>
+		<wsimport
+            quiet="true"
+            keep="true"
+            destdir="${basedir}/build/classes"
+            package="middleware"
+            wsdl="http://${rm.customer.host}:${rm.customer.port}/${rm.customer.name}/service?wsdl">
+        </wsimport>
+	</target>
+	
+	<!-- Generate and run the middleware. -->
+	<target name="middleware" depends="setup">
+		<antcall target="generate-middleware" />
+		<antcall target="ws">
+			<propertyset id="mw_props">
+				<propertyref prefix="mw." />
+				<mapper type="glob" from="mw.*" to="service.*" />
+			</propertyset>
+		</antcall>
+	</target>
+	
+	<!-- Generate and run a RM, with an appropriate name. -->
+	<target name="rm">
+		<antcall target="ws">
+			<propertyset id="rm_props">
+				<propertyref prefix="rm.${rm_name}." />
+				<mapper type="glob" from="rm.${rm_name}.*" to="service.*" />
+			</propertyset>
+		</antcall>
+	</target>
+	
+	<!-- Generate and run all RMs in parallel. -->
+	<target name="rms">
+		<parallel>
+			<antcall target="rm">
+				<param name="rm_name" value="flight" />
+			</antcall>
+			<antcall target="rm">
+				<param name="rm_name" value="car" />
+			</antcall>
+			<antcall target="rm">
+				<param name="rm_name" value="room" />
+			</antcall>
+			<antcall target="rm">
+				<param name="rm_name" value="customer" />
+			</antcall>
+		</parallel>
+	</target>
 
     <target name="generate-client" depends="setup">
         <wsimport
@@ -101,7 +220,7 @@
                 keep="true"
                 destdir="${basedir}/build/classes"
                 package="client"
-                wsdl="http://${service.host}:${service.port}/${service.name}/service?wsdl">
+                wsdl="http://${mw.host}:${mw.port}/${mw.name}/service?wsdl">
         </wsimport>
     </target>
 
@@ -121,15 +240,16 @@
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
-            <arg value="${service.name}"/>
-            <arg value="${service.host}"/>
-            <arg value="${service.port}"/>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
         </java>
     </target>
 
     <target name="help">
-        <echo message="server:  Builds and deploys the service"/>
-        <echo message="client:  Builds and runs the client"/>
+        <echo message="rms:  Builds and deploys all the RMs."/>
+		<echo message="middleware:  Builds, deploys and runs the middleware."/>
+        <echo message="client:  Builds and runs the client."/>
     </target>
     
 </project>

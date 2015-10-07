@@ -121,6 +121,9 @@ public interface ResourceManager {
     @WebMethod
     public String queryCustomerInfo(int id, int customerId); 
 
+    @WebMethod
+    public boolean checkCustomerExistence(int id, int customerId);
+    
     /* Reserve a seat on this flight. */
     @WebMethod
     public boolean reserveFlight(int id, int customerId, int flightNumber); 

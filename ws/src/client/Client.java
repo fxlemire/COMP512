@@ -104,9 +104,7 @@ public class Client extends WSClient {
                         System.out.println("Flight could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -131,9 +129,7 @@ public class Client extends WSClient {
                         System.out.println("cars could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -158,9 +154,7 @@ public class Client extends WSClient {
                         System.out.println("rooms could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -176,9 +170,7 @@ public class Client extends WSClient {
                     System.out.println("new customer id: " + customer);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -199,9 +191,7 @@ public class Client extends WSClient {
                         System.out.println("Flight could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -222,9 +212,7 @@ public class Client extends WSClient {
                         System.out.println("cars could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -245,9 +233,7 @@ public class Client extends WSClient {
                         System.out.println("rooms could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -268,9 +254,7 @@ public class Client extends WSClient {
                         System.out.println("Customer could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -288,9 +272,7 @@ public class Client extends WSClient {
                     System.out.println("Number of seats available: " + seats);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -309,9 +291,7 @@ public class Client extends WSClient {
                     System.out.println("number of cars at this location: " + numCars);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -330,9 +310,7 @@ public class Client extends WSClient {
                     System.out.println("number of rooms at this location: " + numRooms);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -351,9 +329,7 @@ public class Client extends WSClient {
                     System.out.println("Customer info: " + bill);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;               
                 
@@ -372,9 +348,7 @@ public class Client extends WSClient {
                     System.out.println("Price of a seat: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -393,9 +367,7 @@ public class Client extends WSClient {
                     System.out.println("Price of a car at this location: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }                
                 break;
 
@@ -414,9 +386,7 @@ public class Client extends WSClient {
                     System.out.println("Price of rooms at this location: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -439,9 +409,7 @@ public class Client extends WSClient {
                         System.out.println("Flight could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -464,9 +432,7 @@ public class Client extends WSClient {
                         System.out.println("car could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -489,9 +455,7 @@ public class Client extends WSClient {
                         System.out.println("room could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -524,9 +488,7 @@ public class Client extends WSClient {
                         System.out.println("Itinerary could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                             
@@ -553,9 +515,7 @@ public class Client extends WSClient {
                     System.out.println("new customer id: " + customer);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -859,5 +819,9 @@ public class Client extends WSClient {
             throw e;
         }
     }
-    
+
+    private void printErrorMessage(Exception e) {
+        System.out.print("Error: ");
+        System.out.println(e.getMessage());
+    }
 }

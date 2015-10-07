@@ -1,10 +1,6 @@
 package server;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,19 +27,19 @@ public class ClientServiceThread implements Runnable {
     public Thread getRunner() { return _runner; }
 
     public void run() {
-        try {
-        	ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
-        	outputStream.flush();
-        	
-            DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
-            
-            while (true) {
-	            String request = inputStream.readUTF();
-	            
-	            Trace.info("Received request: " + request);
-	
-	            RMResult response = processIfComposite(request);
-	            if (response == null) {
+		try {
+			ObjectOutputStream outputStream = new ObjectOutputStream(_clientSocket.getOutputStream());
+			outputStream.flush();
+
+			DataInputStream inputStream = new DataInputStream(_clientSocket.getInputStream());
+
+			while (true) {
+				String request = inputStream.readUTF();
+
+				Trace.info("Received request: " + request);
+
+				RMResult response = processIfComposite(request);
+				if (response == null) {
 					response = processIfCIDRequired(request);
 					if (response == null) {
 						response = processAtomicRequest(request);
@@ -52,8 +48,10 @@ public class ClientServiceThread implements Runnable {
 
 				outputStream.writeObject(response);
 				outputStream.flush();
-            }
-        } catch (IOException e) {
+			}
+		} catch (EOFException eof) {
+			Trace.info("A client closed a connection.");
+		} catch (IOException e) {
         	e.printStackTrace();
         }
     }
@@ -190,21 +188,11 @@ public class ClientServiceThread implements Runnable {
 		RMResult result = null;
     	String[] parts = requestString.split(",");
 
-		final String FLIGHT_IP = _rmIps[0];
-		final int FLIGHT_PORT = _rmPorts[0];
-		final String CAR_IP = _rmIps[1];
-		final int CAR_PORT = _rmPorts[1];
-		final String ROOM_IP = _rmIps[2];
-		final int ROOM_PORT = _rmPorts[2];
-		final String CUSTOMER_IP = _rmIps[3];
-		final int CUSTOMER_PORT = _rmPorts[3];
-
     	switch (parts[0]) {
     	case Command.INTERFACE_DELETE_CUSTOMER:
-			processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT);
-			processAtomicRequest(requestString, CAR_IP, CAR_PORT);
-			processAtomicRequest(requestString, ROOM_IP, ROOM_PORT);
-			result = processAtomicRequest(requestString, CUSTOMER_IP, CUSTOMER_PORT);
+			for (int i = 0; i < 4; ++i) {
+				result = processAtomicRequest(requestString, _rmIps[i], _rmPorts[i]);
+			}
     		break;
     	case Command.INTERFACE_RESERVE_ITINERARY:
     		//TODO Book an itinerary...
@@ -212,24 +200,15 @@ public class ClientServiceThread implements Runnable {
     	case Command.INTERFACE_QUERY_CUSTOMER_INFO:
 			ArrayList<String> finalBill = new ArrayList<>();
 
-			result = processAtomicRequest(requestString, FLIGHT_IP, FLIGHT_PORT);
-			if (!(result.AsString().equals(""))) {
-				ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
-				finalBill.add(0, tempBill.get(0));
-				finalBill = addToBill(finalBill, result);
+			//i < 3 to exclude customer rm
+			for (int i = 0; i < 3; ++i) {
+				result = processAtomicRequest(requestString, _rmIps[i], _rmPorts[i]);
+				if (!(result.AsString().equals(""))) {
+					finalBill = addToBill(finalBill, result);
+				}
 			}
 
-			result = processAtomicRequest(requestString, CAR_IP, CAR_PORT);
-			if (!(result.AsString().equals(""))) {
-				finalBill = addToBill(finalBill, result);
-			}
-
-			result = processAtomicRequest(requestString, ROOM_IP, ROOM_PORT);
-			if (!(result.AsString().equals(""))) {
-				finalBill = addToBill(finalBill, result);
-			}
-
-			String resultString = "Customer does not exist.";
+			String resultString = "Customer either does not exist or has not made any reservation yet.";
 
 			if (finalBill.size() != 0) {
 				finalBill = addBillTotal(finalBill);
@@ -261,9 +240,15 @@ public class ClientServiceThread implements Runnable {
 
 	private ArrayList<String> addToBill(ArrayList<String> finalBill, RMResult result) {
 		ArrayList<String> tempBill = new ArrayList<>(Arrays.asList(result.AsString().split("\n")));
+
+		if (finalBill.size() == 0) {
+			finalBill.add(0, tempBill.get(0));
+		}
+
 		tempBill.remove(0);
 		tempBill.remove(tempBill.size() - 1);
 		finalBill.addAll(tempBill);
+
 		return finalBill;
 	}
 

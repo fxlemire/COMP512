@@ -494,6 +494,11 @@ public class Client {
                     break;
                 }
                 System.out.println("Quitting client.");
+                try {
+                    m_sock.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 return;
                 
             case 22:  //new Customer given id

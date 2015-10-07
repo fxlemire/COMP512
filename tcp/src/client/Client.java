@@ -106,9 +106,7 @@ public class Client {
                         System.out.println("Flight could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -129,9 +127,7 @@ public class Client {
                         System.out.println("cars could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -152,9 +148,7 @@ public class Client {
                         System.out.println("rooms could not be added");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -170,9 +164,7 @@ public class Client {
                     System.out.println("new customer id: " + customer);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -191,9 +183,7 @@ public class Client {
                         System.out.println("Flight could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -212,9 +202,7 @@ public class Client {
                         System.out.println("cars could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -233,9 +221,7 @@ public class Client {
                         System.out.println("rooms could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -254,9 +240,7 @@ public class Client {
                         System.out.println("Customer could not be deleted");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -273,9 +257,7 @@ public class Client {
                     System.out.println("Number of seats available: " + seats);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -292,9 +274,7 @@ public class Client {
                     System.out.println("number of cars at this location: " + numCars);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -311,9 +291,7 @@ public class Client {
                     System.out.println("number of rooms at this location: " + numRooms);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -330,9 +308,7 @@ public class Client {
                     System.out.println("Customer info: " + bill);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;               
                 
@@ -349,9 +325,7 @@ public class Client {
                     System.out.println("Price of a seat: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -368,10 +342,8 @@ public class Client {
                     System.out.println("Price of a car at this location: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
-                }                
+                    printErrorMessage(e);
+                }
                 break;
 
             case 16: //querying a room price
@@ -387,9 +359,7 @@ public class Client {
                     System.out.println("Price of rooms at this location: " + price);
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -409,9 +379,7 @@ public class Client {
                         System.out.println("Flight could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -431,9 +399,7 @@ public class Client {
                         System.out.println("car could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -453,9 +419,7 @@ public class Client {
                         System.out.println("room could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -479,9 +443,7 @@ public class Client {
                         System.out.println("Itinerary could not be reserved.");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                             
@@ -491,6 +453,11 @@ public class Client {
                     break;
                 }
                 System.out.println("Quitting client.");
+                try {
+                    m_sock.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 return;
                 
             case 22:  //new Customer given id
@@ -511,9 +478,7 @@ public class Client {
                     	System.out.println("Could not create new customer with given id");
                 }
                 catch(Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    printErrorMessage(e);
                 }
                 break;
                 
@@ -801,7 +766,7 @@ public class Client {
         
         return result;
     }
-    
+
     public int getInt(Object temp) throws Exception {
         try {
             return (new Integer((String)temp)).intValue();
@@ -828,5 +793,9 @@ public class Client {
             throw e;
         }
     }
-    
+
+    private void printErrorMessage(Exception e) {
+        System.out.println("Error: ");
+        System.out.println(e.getMessage());
+    }
 }

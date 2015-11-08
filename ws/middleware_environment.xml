@@ -1,0 +1,43 @@
+<env-entry>
+	<env-entry-name>rmIp_flight</env-entry-name>
+	<env-entry-value>${rm.flight.host}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>rmPort_flight</env-entry-name>
+	<env-entry-value>${rm.flight.port}</env-entry-value>
+	<env-entry-type>java.lang.Integer</env-entry-type>
+</env-entry>
+
+<env-entry>
+	<env-entry-name>rmIp_car</env-entry-name>
+	<env-entry-value>${rm.car.host}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>rmPort_car</env-entry-name>
+	<env-entry-value>${rm.car.port}</env-entry-value>
+	<env-entry-type>java.lang.Integer</env-entry-type>
+</env-entry>
+
+<env-entry>
+	<env-entry-name>rmIp_room</env-entry-name>
+	<env-entry-value>${rm.room.host}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>rmPort_room</env-entry-name>
+	<env-entry-value>${rm.room.port}</env-entry-value>
+	<env-entry-type>java.lang.Integer</env-entry-type>
+</env-entry>
+
+<env-entry>
+	<env-entry-name>rmIp_customer</env-entry-name>
+	<env-entry-value>${rm.customer.host}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>rmPort_customer</env-entry-name>
+	<env-entry-value>${rm.customer.port}</env-entry-value>
+	<env-entry-type>java.lang.Integer</env-entry-type>
+</env-entry>

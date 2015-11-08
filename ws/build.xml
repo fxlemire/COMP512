@@ -93,6 +93,32 @@
 		</javac>
 	</target>
 	
+	<target name="create-webxml">
+		<!-- Delete previous web.xml -->
+		<delete file="etc/${service.target}/web.xml" />
+		
+		<!-- Load the environment for this target -->
+		<loadfile srcFile="${service.target}_environment.xml" property="webenv"/>
+		
+		<!-- Load the web.xml template, replacing into it the environment for
+		the target. -->
+		<loadfile property="webxml" srcFile="web_template.xml">
+			<filterchain>
+				<!-- Do two expansion phases. The first one replaces ${webenv}
+				in the template by the environment for the target, and the
+				second expands any properties specified in the environment
+				itself -->
+				<filterreader classname="org.apache.tools.ant.filters.ExpandProperties" />
+				<filterreader classname="org.apache.tools.ant.filters.ExpandProperties" />
+				
+			</filterchain>
+		</loadfile>
+		
+		<!-- Write out the finished web.xml -->
+		<touch file="etc/${service.target}/web.xml" />
+		<echo file="etc/${service.target}/web.xml" message="${webxml}" />
+	</target>
+	
 	<!-- Create the WAR file for a given target webservice. -->
     <target name="create-war">
         <war 
@@ -177,6 +203,9 @@
 	
 	<!-- Generate and run the middleware. -->
 	<target name="middleware" depends="setup">
+		<antcall target="create-webxml">
+			<param name="service.target" value="middleware" />
+		</antcall>
 		<antcall target="generate-middleware" />
 		<antcall target="ws">
 			<propertyset id="mw_props">
@@ -198,6 +227,9 @@
 	
 	<!-- Generate and run all RMs in parallel. -->
 	<target name="rms">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
 		<parallel>
 			<antcall target="rm">
 				<param name="rm_name" value="flight" />

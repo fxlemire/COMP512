@@ -2,6 +2,10 @@
 build/
 webapps/
 
+## PROJECT - GENERATED ###
+ws/etc/middleware/web.xml
+ws/etc/server/web.xml
+
 ### JAVA ###
 *.class
 

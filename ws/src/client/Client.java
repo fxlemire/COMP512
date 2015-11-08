@@ -583,6 +583,12 @@ public class Client extends WSClient {
             return 21;
         else if (argument.compareToIgnoreCase("newcustomerid") == 0)
             return 22;
+        else if (argument.compareToIgnoreCase("start") == 0)
+            return 23;
+        else if (argument.compareToIgnoreCase("commit") == 0)
+            return 24;
+        else if (argument.compareToIgnoreCase("abort") == 0)
+            return 25;
         else
             return 666;
     }
@@ -595,6 +601,7 @@ public class Client extends WSClient {
         System.out.println("deletecustomer\nqueryflight\nquerycar\nqueryroom\nquerycustomer");
         System.out.println("queryflightprice\nquerycarprice\nqueryroomprice");
         System.out.println("reserveflight\nreservecar\nreserveroom\nitinerary");
+        System.out.println("start\ncommit\nabort");
         System.out.println("quit");
         System.out.println("\ntype help, <commandname> for detailed info (note the use of comma).");
     }
@@ -779,6 +786,30 @@ public class Client extends WSClient {
             System.out.println("\tCreates a new customer with the id provided");
             System.out.println("\nUsage: ");
             System.out.println("\tnewcustomerid, <id>, <customerid>");
+            break;
+
+            case 23:  //start
+            System.out.println("Start a session");
+            System.out.println("Purpose: ");
+            System.out.println("\tReturns an ID with which the user can initiate a transaction");
+            System.out.println("\nUsage: ");
+            System.out.println("\tstart");
+            break;
+
+            case 24:  //commit
+            System.out.println("Commit a completed transaction");
+            System.out.println("Purpose: ");
+            System.out.println("\tEnsure the completed transaction is successfully saved");
+            System.out.println("\nUsage: ");
+            System.out.println("\tcommit, <id>");
+            break;
+
+            case 25:  //abort
+            System.out.println("Abort the current transaction");
+            System.out.println("Purpose: ");
+            System.out.println("\tCancel any action that has been taken during the transaction");
+            System.out.println("\nUsage: ");
+            System.out.println("\tabort, <id>");
             break;
 
             default:

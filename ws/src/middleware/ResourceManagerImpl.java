@@ -5,6 +5,9 @@
 
 package middleware;
 
+import middleware.LockManager.LockManager;
+import sun.util.resources.cldr.lo.CurrencyNames_lo;
+
 import java.net.URL;
 import java.util.*;
 
@@ -22,6 +25,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private ObjectPool<ResourceManager> carProxies;
 	private ObjectPool<ResourceManager> roomProxies;
 	private ObjectPool<ResourceManager> customerProxies;
+
+	private LockManager _lockManager = new LockManager();
+	private TransactionManager _transactionManager = new TransactionManager();
 	
 	private ResourceManager getProxyFor(String rm, Context env) 
 	{
@@ -66,6 +72,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	    carProxies = buildPoolFor("car", env);
 	    customerProxies = buildPoolFor("customer", env);
 	}
+
+	public boolean abort(int id) {
+		//TODO: destroy all actions that have been executed
+
+		return _transactionManager.abort(id, _lockManager);
+	}
 	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
 		ResourceManager proxy = carProxies.checkOut();
@@ -88,8 +100,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		ResourceManager proxy = roomProxies.checkOut();
 		boolean result = proxy.addRooms(id, location, numRooms, roomPrice);
 		roomProxies.checkIn(proxy);
-		
+
 		return result;
+	}
+
+	public boolean commit(int id) {
+		//TODO: save all actions that have been executed
+
+		return _transactionManager.commit(id, _lockManager);
 	}
 
 	public boolean deleteCars(int id, String location) {
@@ -378,6 +396,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		}
 		
 		return false;
+	}
+
+	public int start() {
+		return _transactionManager.start();
 	}
 
 	public boolean checkCustomerExistence(int id, int customerId) {

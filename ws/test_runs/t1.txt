@@ -1,5 +1,26 @@
-# A very simple transaction that creates a customer.
+# Some very simple transactions. First creates two customers and a flight.
+# Second one has both customers book the flight, with abort if either customer
+# fails to book.
 
-%1,begin
-newcustomer,%1
+%1,start
+newcustomerid,%1,1
+newcustomerid,%1,2
+newflight,%1,767,1,1
+commit,%1
+
+# Normally this should abort since there's only one seat
+# (Also showcasing different ways of checking conditions for abort)
+%1,start
+%2,reserveflight,%1,1,767
+abort,%1,%2,==,false
+%2,reserveflight,%1,2,767
+abort,%1,%2,!=,true
+commit,%1
+
+
+# Cleanup
+%1,start
+deletecustomer,%1,1
+deletecustomer,%1,2
+deleteflight,%1,767
 commit,%1

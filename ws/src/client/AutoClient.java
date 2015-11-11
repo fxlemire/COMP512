@@ -34,9 +34,9 @@ public class AutoClient extends WSClient {
 		while(i < transactionFile.size())
 		{
 			line = transactionFile.get(i);
-			if(Transaction.getOpName(line).equals("begin"))
+			if(Transaction.getOpName(line).equals("start"))
 			{
-				//Start by adding the begin line
+				//Begin by adding the start line
 				LinkedList<String> txnLines = new LinkedList<String>();
 				txnLines.add(line);
 				
@@ -51,17 +51,14 @@ public class AutoClient extends WSClient {
 					
 					//If we have a commit or unconditional abort, finish
 					//consuming this transaction.
-					if (Transaction.getOpName(line).equals("commit") ||
-							(Transaction.getOpName(line).equals("abort") &&
-							line.indexOf("abort") + "abort".length() == line.length())
-						)
+					if (Transaction.getOpName(line).equals("commit"))
 					{
 						txnsLines.add(txnLines);
 						finished = true;
 						break;
 					}
-					else if(Transaction.getOpName(line).equals("begin"))
-						throw new RuntimeException("Error: begin command inside a transaction "
+					else if(Transaction.getOpName(line).equals("start"))
+						throw new RuntimeException("Error: start command inside a transaction "
 								+ "(line " + (i + 1) + ")");
 				}
 				
@@ -98,7 +95,14 @@ public class AutoClient extends WSClient {
 			//Execute it, record time taken
 			Transaction txn = transactions.get(i);
 			int time = txn.ExecuteAll(proxy);
-			System.out.println(time + "ms (" + txn.size + " ops: " + (time / (float) txn.size) + "ms/op)");
+			int done = txn.getNumCompletedOps();
+			System.out.print(time + "ms (" + done + " ops: " + (time / (float) done) + "ms/op) ");
+			if(txn.wasAborted())
+			{
+				System.out.print("[ABORTED: " + done + "/" + txn.size + " operations completed]");
+			}
+			
+			System.out.println();
 			
 			//Sleep in order to have the proper rate of transactions.
 			int stime = rate - time;

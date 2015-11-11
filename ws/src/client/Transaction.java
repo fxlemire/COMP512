@@ -26,6 +26,8 @@ public class Transaction {
 	private static final String VAR_MARKER = "%";
 	
 	public final int size;
+	private int numCompletedOps = 0;
+	private boolean aborted = false;
 	
 	public Transaction(LinkedList<String> lines)
 	{
@@ -34,6 +36,16 @@ public class Transaction {
 			operations.add(createOperation(lines.get(i), currentVariables));
 		
 		size = operations.size();
+	}
+	
+	public int getNumCompletedOps()
+	{
+		return numCompletedOps;
+	}
+	
+	public boolean wasAborted()
+	{
+		return aborted;
 	}
 	
 	public static final String getOpName(String cmd)
@@ -62,23 +74,6 @@ public class Transaction {
 	private Operation createOperation(String line, HashSet<Integer> currentVariables)
 	{
 		final String[] parts = line.split(",");
-		
-		//If we have an abort, check if it's conditional or not.
-		if(parts[0].equals("abort"))
-		{
-			//No condition: defaults to true
-			//(this makes the handling simpler in the Execute method)
-			String condition = "0 == 0"; 
-			if(parts.length == 2)
-			{
-				condition = parts[1];
-			}
-			
-			String[] conditionParts = splitNotInQuotes(condition, ' ');
-			if (conditionParts.length != 3)
-				throw new RuntimeException("Could not parse conditional abort condition");
-		}		
-		
 		//Start at 1 to skip a potential assignment
 		//Then check whether all the variables we are using
 		//are properly formed and currently available.
@@ -201,13 +196,20 @@ public class Transaction {
 	 */
 	public int ExecuteAll(ResourceManager proxy)
 	{		
-		long start = System.nanoTime();
+		aborted = false;
+		numCompletedOps = 0;
+		
 		variables.clear(); //Make sure we have no variable assignments
+		
+		long start = System.nanoTime();
 		for(Operation op: operations)
 		{
+			numCompletedOps++;
 			// Execute operations as long as one of them doesn't tell us to abort.
-			if(!op.Execute(variables, proxy))
+			if(!op.Execute(variables, proxy)) {
+				aborted = true;
 				break;
+			}
 		}
 		
 		long end = System.nanoTime();
@@ -416,15 +418,30 @@ public class Transaction {
         	result = String.valueOf(proxy.newCustomerId(Integer.parseInt(arguments.get(0)),
         			Integer.parseInt(arguments.get(1))));
             break;
-        case 23: //Begin
+        case 23: //Start
         	// TODO Hacks
         	result = "0";
         	break;
-        case 24: //Abort
+        case 24: //Commit
         	result = "true";
         	break;
-        case 25: //Commit
-        	result = "true";
+        case 25: //Abort
+        	if (arguments.size() != 4) {
+                throw new RuntimeException("Wrong argument size");
+            }
+        	
+        	if (evaluateAbortCondition(arguments.get(1), arguments.get(2), arguments.get(3)))
+        	{
+        		//TODO Send the actual abort
+        		
+        		//No need to wait for some response. Even if the abort doesn't make it,
+        		//no commits have been sent so eventually the data will be removed.
+        		result = "true";
+        	}
+        	else
+        	{
+        		result =  "false";
+        	}
         	break;
         default:
             System.out.println("Warning: unsupported command " + command);
@@ -433,5 +450,17 @@ public class Transaction {
         }
 		
 		return result;
+	}
+	
+	private static boolean evaluateAbortCondition(String a, String op, String b)
+	{
+		//TODO In theory here we should be a bit more careful and check for the
+		//"types" of the operands (e.g. String "true" vs. boolean True.)
+		if(op.equals("=="))
+			return a.equals(b);
+		else if(op.equals("!="))
+			return !a.equals(b);
+		
+		throw new RuntimeException("Unsupported operand: \"" + op + "\"");
 	}
 }

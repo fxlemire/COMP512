@@ -35,6 +35,11 @@
 	<property name="mw.host" value="localhost" />
 	<property name="mw.port" value="38080"/>
     <property name="mw.debugport" value="38090"/>
+	
+	<!-- Properties for the automated client -->
+	<property name="autocli.txnrate" value="1" />
+	<property name="autocli.txnfile" value="${basedir}/test_runs/t1.txt" />
+	<property name="autocli.ntxn" value="1" />
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -277,11 +282,27 @@
             <arg value="${mw.port}"/>
         </java>
     </target>
+	
+	<target name="autoclient" depends="build-client">
+        <java classname="client.AutoClient">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
+			<arg value="${autocli.txnfile}"/>
+            <arg value="${autocli.txnrate}"/>
+            <arg value="${autocli.ntxn}"/>
+        </java>
+    </target>
 
     <target name="help">
         <echo message="rms:  Builds and deploys all the RMs."/>
-		<echo message="middleware:  Builds, deploys and runs the middleware."/>
-        <echo message="client:  Builds and runs the client."/>
+		<echo message="middleware:  Builds and deploys the middleware."/>
+        <echo message="client:  Builds and runs the interactive client."/>
+		<echo message="autoclient:  Builds and runs the automated client."/>
     </target>
     
 </project>

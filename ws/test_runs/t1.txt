@@ -1,0 +1,5 @@
+# A very simple transaction that creates a customer.
+
+%1,begin
+newcustomer,%1
+commit,%1

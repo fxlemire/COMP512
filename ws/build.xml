@@ -39,7 +39,7 @@
 	<!-- Properties for the automated client -->
 	<property name="autocli.txnrate" value="1" />
 	<property name="autocli.txnfile" value="${basedir}/autoruns/t1.txt" />
-	<property name="autocli.ntxn" value="3" />
+	<property name="autocli.ntxn" value="-1" />
 	<property name="autocli.mode" value="seq" />
 
     <path id="jaxws.classpath">

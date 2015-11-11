@@ -77,6 +77,9 @@ public class AutoClient extends WSClient {
 		
 		if (transactions.size() == 0)
 			throw new RuntimeException("Error: file contained no transactions.");
+		
+		if (transactionsLeft < 0)
+			transactionsLeft = transactions.size();
 	}
 
 	public void run()
@@ -149,6 +152,13 @@ public class AutoClient extends WSClient {
 			randMode = args[6].equals("rand");
 		}
 		
+		if (numTransactions < 0)
+		{
+			if (randMode)
+				System.out.println("Warning: negative number of transactions overrides random mode.");
+			randMode = false;
+		}
+			
 		ArrayList<String> lines = new ArrayList<String>();
 		try
 		{

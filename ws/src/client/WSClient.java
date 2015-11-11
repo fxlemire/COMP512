@@ -66,11 +66,11 @@ public class WSClient {
             return 21;
         else if (argument.compareToIgnoreCase("newcustomerid") == 0)
             return 22;
-        else if (argument.compareToIgnoreCase("begin") == 0)
+        else if (argument.compareToIgnoreCase("start") == 0)
             return 23;
-        else if (argument.compareToIgnoreCase("abort") == 0)
-            return 24;
         else if (argument.compareToIgnoreCase("commit") == 0)
+            return 24;
+        else if (argument.compareToIgnoreCase("abort") == 0)
             return 25;
         else
             return 666;

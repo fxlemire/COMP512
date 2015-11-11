@@ -7,7 +7,7 @@ import java.util.HashSet;
 public class TransactionManager {
     private static HashSet<Integer> _processedIds = new HashSet<>();
     private static int _transactionId = 0;
-
+    
     synchronized public int start() {
         return _transactionId++;
     }

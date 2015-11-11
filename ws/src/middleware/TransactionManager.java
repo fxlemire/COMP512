@@ -8,7 +8,7 @@ public class TransactionManager {
     private static HashSet<Integer> _processedIds = new HashSet<>();
     private static int _transactionId = 0;
 
-    synchronized public int start(LockManager lockManager) {
+    synchronized public int start() {
         return _transactionId++;
     }
 

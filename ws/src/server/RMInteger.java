@@ -29,5 +29,10 @@ public class RMInteger extends RMItem implements Serializable {
     public String toString() {
         return String.valueOf(m_value);
     }
+
+	@Override
+	public Object clone() {
+		return new RMInteger(m_value);
+	}
     
 }

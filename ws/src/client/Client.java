@@ -167,7 +167,12 @@ public class Client extends WSClient {
                 try {
                     id = getInt(arguments.elementAt(1));
                     int customer = proxy.newCustomer(id);
-                    System.out.println("new customer id: " + customer);
+
+                    if (customer != -1) {
+                        System.out.println("new customer id: " + customer);
+                    } else {
+                        System.out.println("could not get a new customer id. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -269,7 +274,12 @@ public class Client extends WSClient {
                     id = getInt(arguments.elementAt(1));
                     flightNumber = getInt(arguments.elementAt(2));
                     int seats = proxy.queryFlight(id, flightNumber);
-                    System.out.println("Number of seats available: " + seats);
+
+                    if (seats != 1) {
+                        System.out.println("Number of seats available: " + seats);
+                    } else {
+                        System.out.println("could not fetch the number of seats. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -288,7 +298,12 @@ public class Client extends WSClient {
                     location = getString(arguments.elementAt(2));
 
                     numCars = proxy.queryCars(id, location);
-                    System.out.println("number of cars at this location: " + numCars);
+
+                    if (numCars != -1) {
+                        System.out.println("number of cars at this location: " + numCars);
+                    } else {
+                        System.out.println("could not fetch the number of cars. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -307,7 +322,12 @@ public class Client extends WSClient {
                     location = getString(arguments.elementAt(2));
 
                     numRooms = proxy.queryRooms(id, location);
-                    System.out.println("number of rooms at this location: " + numRooms);
+
+                    if (numRooms != -1) {
+                        System.out.println("number of rooms at this location: " + numRooms);
+                    } else {
+                        System.out.println("could not fetch the number of rooms. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -326,7 +346,12 @@ public class Client extends WSClient {
                     int customer = getInt(arguments.elementAt(2));
 
                     String bill = proxy.queryCustomerInfo(id, customer);
-                    System.out.println("Customer info: " + bill);
+
+                    if (bill != null) {
+                        System.out.println("Customer info: " + bill);
+                    } else {
+                        System.out.println("could not fetch the customer info. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -345,7 +370,12 @@ public class Client extends WSClient {
                     flightNumber = getInt(arguments.elementAt(2));
 
                     price = proxy.queryFlightPrice(id, flightNumber);
-                    System.out.println("Price of a seat: " + price);
+
+                    if (price != -1) {
+                        System.out.println("Price of a seat: " + price);
+                    } else {
+                        System.out.println("could not fetch the flight price. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -364,7 +394,12 @@ public class Client extends WSClient {
                     location = getString(arguments.elementAt(2));
 
                     price = proxy.queryCarsPrice(id, location);
-                    System.out.println("Price of a car at this location: " + price);
+
+                    if (price != -1) {
+                        System.out.println("Price of a car at this location: " + price);
+                    } else {
+                        System.out.println("could not fetch the car price. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -383,7 +418,12 @@ public class Client extends WSClient {
                     location = getString(arguments.elementAt(2));
 
                     price = proxy.queryRoomsPrice(id, location);
-                    System.out.println("Price of rooms at this location: " + price);
+
+                    if (price != 1) {
+                        System.out.println("Price of rooms at this location: " + price);
+                    } else {
+                        System.out.println("could not fetch the room price. Make sure your parameters are correct.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);
@@ -518,10 +558,69 @@ public class Client extends WSClient {
                     printErrorMessage(e);
                 }
                 break;
-            
-            case 26: //Shutdown
-            	proxy.shutdown();
-            	return;
+
+            case 23:  //start a transaction
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+
+                try {
+                    System.out.println("Id to be used in your operations: " + proxy.start());
+                }
+                catch(Exception e) {
+                    printErrorMessage(e);
+                }
+                break;
+
+            case 24:  //commit a transaction
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+
+                try {
+                    id = getInt(arguments.elementAt(1));
+                    System.out.println("Committing transaction ID " + id + "...");
+                    boolean isCommitted = proxy.commit(id);
+
+                    if (isCommitted) {
+                        System.out.println("Transaction ID " + id + " has been successfully committed.");
+                    } else {
+                        System.out.println("Transaction ID " + id + " could not be committed.");
+                    }
+                }
+                catch(Exception e) {
+                    printErrorMessage(e);
+                }
+                break;
+
+            case 25:  //abort a transaction
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+
+                try {
+                    id = getInt(arguments.elementAt(1));
+                    System.out.println("Aborting transaction ID " + id + "...");
+                    boolean isAborted = proxy.abort(id);
+
+                    if (isAborted) {
+                        System.out.println("Transaction ID " + id + " has been successfully aborted.");
+                    } else {
+                        System.out.println("Transaction ID " + id + " could not be aborted.");
+                    }
+                }
+                catch(Exception e) {
+                    printErrorMessage(e);
+                }
+                break;
+
+                case 26: //Shutdown
+                    proxy.shutdown();
+                    return;
+                
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -540,6 +639,7 @@ public class Client extends WSClient {
         }
         return arguments;
     }
+
     public void listCommands() {
         System.out.println("\nWelcome to the client interface provided to test your project.");
         System.out.println("Commands accepted by the interface are: ");
@@ -548,6 +648,7 @@ public class Client extends WSClient {
         System.out.println("deletecustomer\nqueryflight\nquerycar\nqueryroom\nquerycustomer");
         System.out.println("queryflightprice\nquerycarprice\nqueryroomprice");
         System.out.println("reserveflight\nreservecar\nreserveroom\nitinerary");
+        System.out.println("start\ncommit\nabort");
         System.out.println("quit");
         System.out.println("\ntype help, <commandname> for detailed info (note the use of comma).");
     }
@@ -731,6 +832,30 @@ public class Client extends WSClient {
             System.out.println("\tCreates a new customer with the id provided");
             System.out.println("\nUsage: ");
             System.out.println("\tnewcustomerid, <id>, <customerid>");
+            break;
+
+            case 23:  //start
+            System.out.println("Start a session");
+            System.out.println("Purpose: ");
+            System.out.println("\tReturns an ID with which the user can initiate a transaction");
+            System.out.println("\nUsage: ");
+            System.out.println("\tstart");
+            break;
+
+            case 24:  //commit
+            System.out.println("Commit a completed transaction");
+            System.out.println("Purpose: ");
+            System.out.println("\tEnsure the completed transaction is successfully saved");
+            System.out.println("\nUsage: ");
+            System.out.println("\tcommit, <id>");
+            break;
+
+            case 25:  //abort
+            System.out.println("Abort the current transaction");
+            System.out.println("Purpose: ");
+            System.out.println("\tCancel all operations that have been taken during the transaction");
+            System.out.println("\nUsage: ");
+            System.out.println("\tabort, <id>");
             break;
 
             default:

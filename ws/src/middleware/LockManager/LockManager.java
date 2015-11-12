@@ -1,6 +1,7 @@
 package middleware.LockManager;
 
 import java.util.BitSet;
+import java.util.LinkedList;
 import java.util.Vector;
 
 public class LockManager
@@ -62,8 +63,13 @@ public class LockManager
                          
                         if (bConvert.get(0) == true) {
                             // lock conversion 
-                            // *** ADD CODE HERE *** to carry out the lock conversion in the
-                            // lock table
+                        	Vector elts = this.lockTable.elements(dataObj);
+                        	for (int i = 0; i < elts.size(); i++) {
+                        		this.lockTable.remove((XObj) elts.get(i));
+                        	}
+                        	
+                        	this.lockTable.add(trxnObj);
+                            this.lockTable.add(dataObj);
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);
@@ -184,6 +190,8 @@ public class LockManager
         Vector vect = this.lockTable.elements(dataObj);
         DataObj dataObj2;
         int size = vect.size();
+
+        boolean convertible = false;
         
         // as soon as a lock that conflicts with the current lock request is found, return true
         for (int i = 0; i < size; i++) {
@@ -197,12 +205,15 @@ public class LockManager
                     // is redundant.
                     throw new RedundantLockRequestException(dataObj.getXId(), "Redundant READ lock request");
                 } else if (dataObj.getLockType() == DataObj.WRITE) {
-                    // transaction already has a lock and is requesting a WRITE lock
-                    // now there are two cases to analyze here
-                    // (1) transaction already had a READ lock
-                    // (2) transaction already had a WRITE lock
-                    // Seeing the comments at the top of this function might be helpful
-                    // *** ADD CODE HERE *** to take care of both these cases
+                	if (dataObj2.getLockType() == DataObj.WRITE) {
+                		// Transaction already has a write lock, so request is redundant.
+                		throw new RedundantLockRequestException(dataObj.getXId(), "Redundant WRITE lock request");
+                	} else if (dataObj2.getLockType() == DataObj.READ) {
+                		// Transaction already has a read lock. We set a flag.
+                		// If others have read locks, it will get picked up by the
+                		// else block and return a conflict.
+                		convertible = true;
+                	}
                 }
             } 
             else {
@@ -223,6 +234,13 @@ public class LockManager
                     return true;
                 }
             }
+        }
+        
+        // If we get here, then no locks have been found that conflict with our
+        // request. Therefore if this flag is set, we're asking for a write lock
+        // and we already own a read lock.
+        if (convertible) {
+        	bitset.set(0);
         }
         
         // no conflicting lock found, return false

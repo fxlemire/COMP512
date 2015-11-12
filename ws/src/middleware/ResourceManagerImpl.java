@@ -387,6 +387,35 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		customerProxies.checkIn(proxy);
 		return result;
 	}
+	
+	public boolean shutdown() {
+		ResourceManager proxy = customerProxies.checkOut();
+		proxy.shutdown();
+		customerProxies.checkIn(proxy);
+		
+		proxy = carProxies.checkOut();
+		proxy.shutdown();
+		carProxies.checkIn(proxy);
+		
+		proxy = roomProxies.checkOut();
+		proxy.shutdown();
+		roomProxies.checkIn(proxy);
+		
+		proxy = flightProxies.checkOut();
+		proxy.shutdown();
+		flightProxies.checkIn(proxy);
+		
+		Timer end = new Timer();
+		end.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				System.exit(0);
+			} 
+		}, 1000);
+		
+		return true;
+	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {
 		String bill = proxy.queryCustomerInfo(id, customerId);

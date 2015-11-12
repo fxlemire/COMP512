@@ -72,6 +72,8 @@ public class WSClient {
             return 24;
         else if (argument.compareToIgnoreCase("abort") == 0)
             return 25;
+        else if (argument.compareToIgnoreCase("shutdown") == 0)
+            return 26;
         else
             return 666;
     }

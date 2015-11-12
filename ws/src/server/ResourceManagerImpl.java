@@ -474,5 +474,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         	return false;
         return true;
 	}
+	
+	public boolean shutdown() {
+		Timer end = new Timer();
+		end.schedule(new TimerTask() {
+
+			@Override
+			public void run() {
+				System.exit(0);
+			} 
+		}, 1000);
+		
+		return true;
+	}
 
 }

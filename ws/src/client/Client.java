@@ -275,7 +275,7 @@ public class Client extends WSClient {
                     flightNumber = getInt(arguments.elementAt(2));
                     int seats = proxy.queryFlight(id, flightNumber);
 
-                    if (seats != 1) {
+                    if (seats != -1) {
                         System.out.println("Number of seats available: " + seats);
                     } else {
                         System.out.println("could not fetch the number of seats. Make sure your parameters are correct.");

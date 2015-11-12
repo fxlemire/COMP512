@@ -46,8 +46,12 @@ public class ClientOperation {
     	while(rev.hasNext()) {
     		ClientOperation op = rev.next();
     		//We also want to make a copy here
-    		if (op.getKey().equals(key))
-    			return (RMItem) op.getItem().clone();
+    		if (op.getKey().equals(key)) {
+    			RMItem item = op.getItem();
+    			if (item != null)
+    				item = (RMItem) item.clone();
+    			return item;
+    		}
     	}
     	
     	return null;

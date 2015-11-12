@@ -6,7 +6,7 @@ import java.util.HashSet;
 
 public class TransactionManager {
     private final Object _bidon = new Object();
-    private static HashSet<Integer> _processedIds = new HashSet<>();
+    private static HashSet<Integer> _processedIds = new HashSet<Integer>();
     private static int _transactionId = 0;
 
     public int start() {

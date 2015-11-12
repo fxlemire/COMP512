@@ -79,21 +79,36 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			return false;
 		}
 
-		ResourceManager proxy = customerProxies.checkOut();
-		proxy.abort(id);
-		customerProxies.checkIn(proxy);
+		boolean[] rmsUsed = _transactionManager.getRMsUsed(id);
 
-		proxy = carProxies.checkOut();
-		proxy.abort(id);
-		carProxies.checkIn(proxy);
+		if (rmsUsed == null) {
+			return false;
+		}
 
-		proxy = flightProxies.checkOut();
-		proxy.abort(id);
-		flightProxies.checkIn(proxy);
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			proxy.abort(id);
+			customerProxies.checkIn(proxy);
+		}
 
-		proxy = roomProxies.checkOut();
-		proxy.abort(id);
-		roomProxies.checkIn(proxy);
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			proxy.abort(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			proxy.abort(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			proxy.abort(id);
+			roomProxies.checkIn(proxy);
+		}
 
 		return _transactionManager.abort(id, _lockManager);
 	}
@@ -103,6 +118,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			return false;
 		}
+
+		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 
 		ResourceManager proxy = carProxies.checkOut();
 		boolean result = proxy.addCars(id, location, numCars, carPrice);
@@ -118,6 +135,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			return false;
 		}
 
+		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
+
 		ResourceManager proxy = flightProxies.checkOut();
 		boolean result = proxy.addFlight(id, flightNumber, numSeats, flightPrice);
 		flightProxies.checkIn(proxy);
@@ -130,6 +149,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			return false;
 		}
+
+		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
 
 		ResourceManager proxy = roomProxies.checkOut();
 		boolean result = proxy.addRooms(id, location, numRooms, roomPrice);
@@ -144,21 +165,36 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			return false;
 		}
 
-		ResourceManager proxy = customerProxies.checkOut();
-		proxy.commit(id);
-		customerProxies.checkIn(proxy);
+		boolean[] rmsUsed = _transactionManager.getRMsUsed(id);
 
-		proxy = carProxies.checkOut();
-		proxy.commit(id);
-		carProxies.checkIn(proxy);
+		if (rmsUsed == null) {
+			return false;
+		}
 
-		proxy = flightProxies.checkOut();
-		proxy.commit(id);
-		flightProxies.checkIn(proxy);
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			proxy.commit(id);
+			customerProxies.checkIn(proxy);
+		}
 
-		proxy = roomProxies.checkOut();
-		proxy.commit(id);
-		roomProxies.checkIn(proxy);
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			proxy.commit(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			proxy.commit(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			proxy.commit(id);
+			roomProxies.checkIn(proxy);
+		}
 
 		return _transactionManager.commit(id, _lockManager);
 	}
@@ -168,6 +204,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			return false;
 		}
+
+		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 
 		ResourceManager proxy = carProxies.checkOut();
 		boolean result = proxy.deleteCars(id, location);
@@ -188,6 +226,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			customerProxies.checkIn(proxy);
 			return false;
 		}
+		_transactionManager.addTransactionRM(id, TransactionManager.CUSTOMER);
+		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
+		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
+		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
+
 		proxy.deleteCustomer(id, customerId);
 		customerProxies.checkIn(proxy);
 		
@@ -212,6 +255,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			return false;
 		}
 
+		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
+
 		ResourceManager proxy = flightProxies.checkOut();
 		boolean result = proxy.deleteFlight(id, flightNumber);
 		flightProxies.checkIn(proxy);
@@ -225,6 +270,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			return false;
 		}
 
+		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
+
 		ResourceManager proxy = roomProxies.checkOut();
 		boolean result = proxy.deleteRooms(id, location);
 		roomProxies.checkIn(proxy);
@@ -237,6 +284,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			return -1;
 		}
+
+		_transactionManager.addTransactionRM(id, TransactionManager.CUSTOMER);
+
 		ResourceManager proxy = customerProxies.checkOut();
 		int result = proxy.newCustomer(id);
 		customerProxies.checkIn(proxy);
@@ -249,6 +299,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			return false;
 		}
+
+		_transactionManager.addTransactionRM(id, TransactionManager.CUSTOMER);
 
 		// Just call this at the customer RM. Normally the
 		// client won't use it by themselves.
@@ -305,11 +357,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		ResourceManager flightProxy = flightProxies.checkOut();
 		finalBill = updateBill(finalBill, flightProxy, id, customerId);
 		flightProxies.checkIn(flightProxy);
-		
+
 		ResourceManager carProxy = carProxies.checkOut();
 		finalBill = updateBill(finalBill, carProxy, id, customerId);
 		carProxies.checkIn(carProxy);
-		
+
 		ResourceManager roomProxy = roomProxies.checkOut();
 		finalBill = updateBill(finalBill, roomProxy, id, customerId);
 		roomProxies.checkIn(roomProxy);
@@ -398,6 +450,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		if (exists)
 		{
+			_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 			proxy = carProxies.checkOut();
 			proxy.newCustomerId(id, customerId);
 			boolean result = proxy.reserveCar(id, customerId, location);
@@ -421,6 +474,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		if (exists)
 		{
+			_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
 			proxy = flightProxies.checkOut();
 			proxy.newCustomerId(id, customerId);
 			boolean result = proxy.reserveFlight(id, customerId, flightNumber);
@@ -451,6 +505,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		
 		// Have a simple management of proxies here.
+		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
+		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
+		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
 		ResourceManager flightProxy = flightProxies.checkOut();
 		ResourceManager carProxy = carProxies.checkOut();
 		ResourceManager roomProxy = roomProxies.checkOut();
@@ -523,6 +580,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		if (exists)
 		{
+			_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
 			proxy = roomProxies.checkOut();
 			proxy.newCustomerId(id, customerId);
 			boolean result = proxy.reserveRoom(id, customerId, location);

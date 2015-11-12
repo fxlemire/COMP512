@@ -27,7 +27,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private ObjectPool<ResourceManager> customerProxies;
 
 	private LockManager _lockManager = new LockManager();
-	private TransactionManager _transactionManager = new TransactionManager();
+	private TransactionManager _transactionManager = TransactionManager.getInstance(this);
 	
 	private ResourceManager getProxyFor(String rm, Context env) 
 	{

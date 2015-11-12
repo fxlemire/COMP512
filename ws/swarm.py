@@ -2,6 +2,7 @@ import paramiko
 import ast
 import os
 import time
+import re
 
 VERBOSE = True
 
@@ -166,7 +167,21 @@ def startWS(host, which, id):
 	cmd = "ant -buildfile " + conf[CFG_CODE] + "/build.xml -Dswarmid=" + str(id) + " " + which
 	startLongProcess(ssh, cmd)
 	ssh.close()
+
+'''
+Tell the MW/RMs to shutdown
+'''
+def endIt(conf):
+	# Launch a one-off client and just have it send a shutdown.
+	ssh = paramiko.SSHClient()
+	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+	ssh.connect(conf[CFG_MW_HOST], username=conf[CFG_USER], password=conf[CFG_PASS])
+	cmd = ("ant -buildfile " + conf[CFG_CODE] + "/build.xml -Dmw.host=" + 
+			conf[CFG_MW_HOST] + " client")
 	
+	simpleExec(ssh, cmd, ["shutdown\n"])
+	
+	ssh.close()
 	
 # ======= Main =======
 
@@ -245,6 +260,15 @@ if VERBOSE:
 
 time.sleep(max)
 
+# Clients should be gone already, we just have to end the RMs
+if VERBOSE:
+	print "Quitting RMs/MW..."
+endIt(conf)
+
+#Sleep for a few seconds to make sure everything has shut down properly.
+time.sleep(5)
+
+
 if VERBOSE:
 	print "Collecting logs..."
 
@@ -258,12 +282,18 @@ for logfile in sftp.listdir(conf[CFG_LOG_DIR]):
 	remote = conf[CFG_LOG_DIR] + "/" + logfile
 	sftp.get(remote, conf[CFG_LOG_DEST] + "/" + logfile)
 	
-	# TODO remove this only after the things have been quit
-	#sftp.remove(remote)
+	sftp.remove(remote)
 	if VERBOSE:
 		print "Collected " + remote
 
-# TODO Same comment as above
-#sftp.rmdir(conf[CFG_LOG_DIR])
+if VERBOSE:
+	print "Cleaning up..."
+sftp.rmdir(conf[CFG_LOG_DIR])
 
-# TODO Remove swarm.properties files, actually quit
+# Remove properties files
+properties = re.compile("swarm_.*\.properties")
+for file in sftp.listdir(conf[CFG_CODE]):
+	if properties.match(file):
+		sftp.remove(conf[CFG_CODE] + "/" + file)
+		
+ssh.close()

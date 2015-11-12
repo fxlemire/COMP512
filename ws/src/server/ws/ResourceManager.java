@@ -141,5 +141,8 @@ public interface ResourceManager {
     @WebMethod
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, 
                                     String location, boolean car, boolean room);
-    			
+    
+    /* Unconditionally terminate execution. */
+    @WebMethod
+    public boolean shutdown(); 
 }

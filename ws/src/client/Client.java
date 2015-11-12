@@ -518,7 +518,10 @@ public class Client extends WSClient {
                     printErrorMessage(e);
                 }
                 break;
-                
+            
+            case 26: //Shutdown
+            	proxy.shutdown();
+            	return;
             default:
                 System.out.println("The interface does not support this command.");
                 break;

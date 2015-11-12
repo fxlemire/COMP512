@@ -60,7 +60,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Abort a transaction.
     public boolean abort(int id) {
         synchronized(bidon) {
+            long start = System.nanoTime();
             _temporaryOperations.remove(id);
+            log("abort", id, start);
             return true;
         }
     }
@@ -68,10 +70,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Commit a transaction.
     public boolean commit(int id) {
         synchronized(bidon) {
+            long start = System.nanoTime();
+
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
                 Trace.info("No transactions were done: nothing to commit.");
+                log("commit", id, start);
                 return true;
             }
 
@@ -93,7 +98,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
 
             _temporaryOperations.remove(id);
-
+            log("commit", id, start);
             return true;
         }
     }
@@ -210,6 +215,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     
     public boolean addFlight(int id, int flightNumber, 
                              int numSeats, int flightPrice) {
+        long start = System.nanoTime();
         Trace.info("RM::addFlight(" + id + ", " + flightNumber 
                 + ", $" + flightPrice + ", " + numSeats + ") called.");
         
@@ -239,25 +245,34 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + ", $" + flightPrice + ", " + numSeats + ") OK: "
                     + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
         }
-        
-        
+
+        log("addFlight", id, start);
         return(true);
     }
 
     
     public boolean deleteFlight(int id, int flightNumber) {
-        return deleteItem(id, Flight.getKey(flightNumber));
+        long start = System.nanoTime();
+        boolean isDeleted = deleteItem(id, Flight.getKey(flightNumber));
+        log("deleteFlight", id, start);
+        return isDeleted;
     }
 
     // Returns the number of empty seats on this flight.
     
     public int queryFlight(int id, int flightNumber) {
-        return queryNum(id, Flight.getKey(flightNumber));
+        long start = System.nanoTime();
+        int emptySeats = queryNum(id, Flight.getKey(flightNumber));
+        log("queryFlight", id, start);
+        return emptySeats;
     }
 
     // Returns price of this flight.
     public int queryFlightPrice(int id, int flightNumber) {
-        return queryPrice(id, Flight.getKey(flightNumber));
+        long start = System.nanoTime();
+        int price = queryPrice(id, Flight.getKey(flightNumber));
+        log("queryFlightPrice", id, start);
+        return price;
     }
 
     /*
@@ -304,6 +319,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // its current price.
     
     public boolean addCars(int id, String location, int numCars, int carPrice) {
+        long start = System.nanoTime();
         Trace.info("RM::addCars(" + id + ", " + location + ", " 
                 + numCars + ", $" + carPrice + ") called.");
         Car curObj = (Car) readData(id, Car.getKey(location));
@@ -324,25 +340,35 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + numCars + ", $" + carPrice + ") OK: " 
                     + "cars = " + curObj.getCount() + ", price = $" + carPrice);
         }
+        log("addCars", id, start);
         return(true);
     }
 
     // Delete cars from a location.
     
     public boolean deleteCars(int id, String location) {
-        return deleteItem(id, Car.getKey(location));
+        long start = System.nanoTime();
+        boolean isDeleted = deleteItem(id, Car.getKey(location));
+        log("deleteCars", id, start);
+        return isDeleted;
     }
 
     // Returns the number of cars available at a location.
     
     public int queryCars(int id, String location) {
-        return queryNum(id, Car.getKey(location));
+        long start = System.nanoTime();
+        int cars = queryNum(id, Car.getKey(location));
+        log("queryCars", id, start);
+        return cars;
     }
 
     // Returns price of cars at this location.
     
     public int queryCarsPrice(int id, String location) {
-        return queryPrice(id, Car.getKey(location));
+        long start = System.nanoTime();
+        int price = queryPrice(id, Car.getKey(location));
+        log("queryCarsPrice", id, start);
+        return price;
     }
     
 
@@ -353,6 +379,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // its current price.
     
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        long start = System.nanoTime();
         Trace.info("RM::addRooms(" + id + ", " + location + ", " 
                 + numRooms + ", $" + roomPrice + ") called.");
         Room curObj = (Room) readData(id, Room.getKey(location));
@@ -373,32 +400,43 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + numRooms + ", $" + roomPrice + ") OK: " 
                     + "rooms = " + curObj.getCount() + ", price = $" + roomPrice);
         }
+        log("addRooms", id, start);
         return(true);
     }
 
     // Delete rooms from a location.
     
     public boolean deleteRooms(int id, String location) {
-        return deleteItem(id, Room.getKey(location));
+        long start = System.nanoTime();
+        boolean isDeleted = deleteItem(id, Room.getKey(location));
+        log("deleteRooms", id, start);
+        return isDeleted;
     }
 
     // Returns the number of rooms available at a location.
     
     public int queryRooms(int id, String location) {
-        return queryNum(id, Room.getKey(location));
+        long start = System.nanoTime();
+        int rooms = queryNum(id, Room.getKey(location));
+        log("queryRooms", id, start);
+        return rooms;
     }
     
     // Returns room price at this location.
     
     public int queryRoomsPrice(int id, String location) {
-        return queryPrice(id, Room.getKey(location));
+        long start = System.nanoTime();
+        int price = queryPrice(id, Room.getKey(location));
+        log("queryRoomsPrice", id, start);
+        return price;
     }
 
 
     // Customer operations //
 
     
-    public int newCustomer(int id) {    	
+    public int newCustomer(int id) {
+        long start = System.nanoTime();
         Trace.info("INFO: RM::newCustomer(" + id + ") called.");
         
         // Generate a globally unique Id for the new customer.
@@ -408,12 +446,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Customer cust = new Customer(customerId);
         writeData(id, cust.getKey(), cust);
         Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
+        log("newCustomer", id, start);
         return customerId;
     }
 
     // This method makes testing easier.
     
     public boolean newCustomerId(int id, int customerId) {
+        long start = System.nanoTime();
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
         
         // There are no sync issues here. If there was no customer but one
@@ -424,10 +464,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             cust = new Customer(customerId);
             writeData(id, cust.getKey(), cust);
             Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
+            log("newCustomerId", id, start);
             return true;
         } else {
             Trace.info("INFO: RM::newCustomer(" + id + ", " + 
                     customerId + ") failed: customer already exists.");
+            log("newCustomerId", id, start);
             return false;
         }
     }
@@ -435,11 +477,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Delete customer from the database. 
     
     public boolean deleteCustomer(int id, int customerId) {
+        long start = System.nanoTime();
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.warn("RM::deleteCustomer(" + id + ", " 
                     + customerId + ") failed: customer doesn't exist.");
+            log("deleteCustomer", id, start);
             return false;
         } else {            
             // Increase the reserved numbers of all reservable items that 
@@ -463,6 +507,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             // Remove the customer from the storage.
             removeData(id, cust.getKey());
             Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
+            log("deleteCustomer", id, start);
             return true;
         }
     }
@@ -471,32 +516,39 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Returns null if the customer doesn't exist. 
     // Returns empty RMHashtable if customer exists but has no reservations.
     public RMHashtable getCustomerReservations(int id, int customerId) {
+        long start = System.nanoTime();
         Trace.info("RM::getCustomerReservations(" + id + ", " 
                 + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.info("RM::getCustomerReservations(" + id + ", " 
                     + customerId + ") failed: customer doesn't exist.");
+            log("getCustomerReservations", id, start);
             return null;
         } else {
-            return cust.getReservations();
+            RMHashtable reservations = cust.getReservations();
+            log("getCustomerReservations", id, start);
+            return reservations;
         }
     }
 
     // Return a bill.
     
     public String queryCustomerInfo(int id, int customerId) {
+        long start = System.nanoTime();
         Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.warn("RM::queryCustomerInfo(" + id + ", " 
                     + customerId + ") failed: customer doesn't exist.");
             // Returning an empty bill means that the customer doesn't exist.
+            log("queryCustomerInfo", id, start);
             return "";
         } else {
             String s = cust.printBill();
             Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
             System.out.println(s);
+            log("queryCustomerInfo", id, start);
             return s;
         }
     }
@@ -504,20 +556,29 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Add flight reservation to this customer.  
     
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        return reserveItem(id, customerId, 
+        long start = System.nanoTime();
+        boolean isReserved = reserveItem(id, customerId,
                 Flight.getKey(flightNumber), String.valueOf(flightNumber));
+        log("reserveFlight", id, start);
+        return isReserved;
     }
 
     // Add car reservation to this customer. 
     
     public boolean reserveCar(int id, int customerId, String location) {
-        return reserveItem(id, customerId, Car.getKey(location), location);
+        long start = System.nanoTime();
+        boolean isReserved = reserveItem(id, customerId, Car.getKey(location), location);
+        log("reserveCar", id, start);
+        return isReserved;
     }
 
     // Add room reservation to this customer. 
     
     public boolean reserveRoom(int id, int customerId, String location) {
-        return reserveItem(id, customerId, Room.getKey(location), location);
+        long start = System.nanoTime();
+        boolean isReserved = reserveItem(id, customerId, Room.getKey(location), location);
+        log("reserveRoom", id, start);
+        return isReserved;
     }
     
 
@@ -525,6 +586,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room) {
+        long start = System.nanoTime();
+        log("reserveItinerary", id, start);
         return false;
     }
 
@@ -534,9 +597,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
 	public boolean checkCustomerExistence(int id, int customerId) {
+        long start = System.nanoTime();
 		Trace.info("RM::checkCustomerExistence(" + id + ", " + customerId + ") called.");
-        if (readData(id, Customer.getKey(customerId)) == null)
-        	return false;
+        if (readData(id, Customer.getKey(customerId)) == null) {
+            log("checkCustomerExistence", id, start);
+            return false;
+        }
+        log("checkCustomerExistence", id, start);
         return true;
 	}
 	
@@ -549,7 +616,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				System.exit(0);
 			} 
 		}, 1000);
-		
 		return true;
 	}
 
@@ -562,5 +628,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         operations.addLast(new ClientOperation(key, value, operationType));
         _temporaryOperations.put(id, operations);
+    }
+
+    private void log(String method, int id, long start) {
+        long end = System.nanoTime();
+        System.out.println("[PERF] " + method + " " + id + ": " + (int) ((end - start) / 1e6) + "ms");
     }
 }

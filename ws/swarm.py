@@ -131,13 +131,11 @@ def startClient(id, ssh, conf, clientConf):
 '''
 Start a process without waiting for it to finish, and return its pid
 '''
-def startLongProcess(ssh, cmd, fuck=False):
+def startLongProcess(ssh, cmd):
 	if VERBOSE:
 		print "Starting long process \"" + cmd + "\"..."
 	i,o,r = ssh.exec_command("nohup " + cmd + "&")
-	
-	if fuck:
-		print o.read()
+
 
 '''
 Create a file with the given contents and upload it to the specified location.

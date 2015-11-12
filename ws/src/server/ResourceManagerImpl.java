@@ -33,7 +33,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
 
             if (!wasFound) {
-                item = (RMItem) m_itemHT.get(key);
+            	// Get a copy of the item that's in the hashTable.
+                item = (RMItem) ((RMItem) m_itemHT.get(key)).clone();
             }
 
             return item;

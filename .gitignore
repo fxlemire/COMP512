@@ -81,3 +81,5 @@ local.properties
 ### VARIOUS ### 
 # vim backup 
 *.*~
+# log
+*.log

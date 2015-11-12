@@ -100,7 +100,7 @@ public class Transaction {
 			
 			public boolean Execute(HashMap<Integer, String> variables, ResourceManager proxy) {
 				System.out.print("Executing: ");
-				
+				long start = System.nanoTime();
 				//Determine whether we're assigning a variable or not
 				int i = 1;
 				String assignVar = null;
@@ -126,18 +126,21 @@ public class Transaction {
 					System.out.print(value + ",");
 				}
 				
-				System.out.println();
+				
 				
 				//Perform the dispatch on the proxy
 				String result = Transaction.dispatch(cmd, arguments, proxy);
-				
+				System.out.print(",, Result: " + result);
 				//Assign the variable if there's one.
 				if(assignVar != null)
 					variables.put(getVariable(assignVar), result);
 				
+				long end = System.nanoTime();
+				System.out.println(" (" + (int) ((end - start) / 1e6) + "ms)");
+				
 				//If the command was abort and the result of it was true,
 				//we want to abort and thus return false.
-				//In all other cases we want to return true.
+				//In all other cases we want to return true.				
 				return !(cmd.equals("abort") && Boolean.parseBoolean(result));
 			}
 		};

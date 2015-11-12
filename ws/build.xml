@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="help" name="project">
 
+	<!-- Allow swarm to override any properties of this xml -->
+	<property file="swarm_${swarmid}.properties" />
+
+	<property name="logdir" value="."/>
+	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
 	<property name="rm.flight.name" value="rm_flight"/>
@@ -38,10 +43,15 @@
 	
 	<!-- Properties for the automated client -->
 	<property name="autocli.txnrate" value="1" />
-	<property name="autocli.txnfile" value="${basedir}/autoruns/t1.txt" />
+	<property name="autocli.txnfile" value="./autoruns/t1.txt" />
 	<property name="autocli.ntxn" value="-1" />
 	<property name="autocli.mode" value="seq" />
 
+	<!-- Get current time in a property (for potential use later) -->
+	<tstamp>
+		<format property="now" pattern="yyyy_MM_dd_HH_mm_ss" />
+	</tstamp>
+	
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
         <pathelement location="${java.home}/../jre/lib/rt.jar"/>
@@ -152,7 +162,8 @@
 	<!-- Start tomcat with a given webservice. -->
     <target name="start-tomcat" depends="build-main">
         <echo message="Starting Tomcat and deploying service ... "/>
-        <java fork="true" classname="main.${service.target}.Main">
+        <java fork="true" classname="main.${service.target}.Main" 
+			output="${logdir}/${service.name}_${now}.log">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build"/>
@@ -231,6 +242,44 @@
 		</antcall>
 	</target>
 	
+	<!--====== Individual targets for the RMS ======-->
+	<target name="rm_flight">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="flight" />
+		</antcall>
+	</target>
+	
+	<target name="rm_car">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="car" />
+		</antcall>
+	</target>
+	
+	<target name="rm_room">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="room" />
+		</antcall>
+	</target>
+	
+	<target name="rm_customer">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="customer" />
+		</antcall>
+	</target>
+	<!--============================================-->
+	
 	<!-- Generate and run all RMs in parallel. -->
 	<target name="rms">
 		<antcall target="create-webxml">
@@ -285,7 +334,7 @@
     </target>
 	
 	<target name="autoclient" depends="build-client">
-        <java classname="client.AutoClient">
+        <java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

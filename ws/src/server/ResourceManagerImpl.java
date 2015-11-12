@@ -10,32 +10,90 @@ import javax.jws.WebService;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {	
-	
+
+    protected final Object bidon = new Object();
+    protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<>();
     protected RMHashtable m_itemHT = new RMHashtable();
     
     // Basic operations on RMItem //
-    
-    // Read a data item.
+
+    /**
+     * Read a data item. If the requested item has been locally updated, read this version.
+     */
     private RMItem readData(int id, String key) {
-        synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.get(key);
+        synchronized(bidon) {
+            RMItem item = null;
+            LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+            boolean wasFound = false;
+
+            if (operations != null) {
+                item = ClientOperation.getLatest(operations);
+                wasFound = true;
+            }
+
+            if (!wasFound) {
+                item = (RMItem) m_itemHT.get(key);
+            }
+
+            return item;
         }
     }
 
     // Write a data item.
     private void writeData(int id, String key, RMItem value) {
-        synchronized(m_itemHT) {
-            m_itemHT.put(key, value);
+        synchronized(bidon) {
+            addTemporaryOperation(id, key, value, ClientOperation.Type.WRITE);
         }
     }
     
     // Remove the item out of storage.
-    protected RMItem removeData(int id, String key) {
-        synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.remove(key);
+    protected void removeData(int id, String key) {
+        synchronized(bidon) {
+            addTemporaryOperation(id, key, null, ClientOperation.Type.DELETE);
         }
     }
-    
+
+    // Abort a transaction.
+    public boolean abort(int id) {
+        synchronized(bidon) {
+            _temporaryOperations.remove(id);
+            return true;
+        }
+    }
+
+    // Commit a transaction.
+    public boolean commit(int id) {
+        synchronized(bidon) {
+            LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+            if (operations == null) {
+                Trace.info("No transactions were done: nothing to commit.");
+                return true;
+            }
+
+            Iterator<ClientOperation> it = operations.iterator();
+
+            while (it.hasNext()) {
+                ClientOperation op = it.next();
+
+                switch (op.getOperationType()) {
+                    case WRITE:
+                        m_itemHT.put(op.getKey(), op.getItem());
+                        break;
+                    case DELETE:
+                        m_itemHT.remove(op.getKey());
+                        break;
+                    default:
+                        //nothing to do
+                }
+            }
+
+            _temporaryOperations.remove(id);
+
+            return true;
+        }
+    }
     
     // Basic operations on ReservableItem //
     
@@ -46,8 +104,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     	// Potential data corruption: we test getReserved
     	// and find 0, but before we delete it, another thread makes
     	// a reservation on the item. Hence, we synchronize this access.
-        synchronized (m_itemHT) {
-        	
+        synchronized (bidon) {
 	        ReservableItem curObj = (ReservableItem) readData(id, key);
 	        // Check if there is such an item in the storage.
 	        if (curObj == null) {
@@ -108,7 +165,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         // - Item has one reservation, but before performing the new reservation,
         //   the old customer is deleted and then the item is deleted. This will
         //   write a reservation for an unexisting item.
-        synchronized (m_itemHT) {
+        synchronized (bidon) {
 	        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 	        if (cust == null) {
 	            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", " 
@@ -468,6 +525,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         return false;
     }
 
+    public int start() {
+        //dummy implementation
+        return -1;
+    }
+
 	public boolean checkCustomerExistence(int id, int customerId) {
 		Trace.info("RM::checkCustomerExistence(" + id + ", " + customerId + ") called.");
         if (readData(id, Customer.getKey(customerId)) == null)
@@ -488,4 +550,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		return true;
 	}
 
+    private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
+        LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+        if (operations == null) {
+            operations = new LinkedList<>();
+        }
+
+        operations.addLast(new ClientOperation(key, value, operationType));
+        _temporaryOperations.put(id, operations);
+    }
 }

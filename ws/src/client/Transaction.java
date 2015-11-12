@@ -419,11 +419,10 @@ public class Transaction {
         			Integer.parseInt(arguments.get(1))));
             break;
         case 23: //Start
-        	// TODO Hacks
-        	result = "0";
+        	result = String.valueOf(proxy.start());
         	break;
         case 24: //Commit
-        	result = "true";
+        	result = String.valueOf(proxy.commit(Integer.parseInt(arguments.get(0))));
         	break;
         case 25: //Abort
         	if (arguments.size() != 4) {
@@ -432,7 +431,7 @@ public class Transaction {
         	
         	if (evaluateAbortCondition(arguments.get(1), arguments.get(2), arguments.get(3)))
         	{
-        		//TODO Send the actual abort
+        		proxy.commit(Integer.parseInt(arguments.get(0)));
         		
         		//No need to wait for some response. Even if the abort doesn't make it,
         		//no commits have been sent so eventually the data will be removed.

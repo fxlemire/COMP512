@@ -4,7 +4,7 @@
 	<!-- Allow swarm to override any properties of this xml -->
 	<property file="swarm_${swarmid}.properties" />
 
-	<property name="logdir" value="."/>
+	<property name="logdir" value="${basedir}/logs"/>
 	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
@@ -73,6 +73,7 @@
         <mkdir dir="${basedir}/build/classes"/>
         <mkdir dir="${basedir}/build/war"/>
         <mkdir dir="${basedir}/webapps"/>
+		<mkdir dir="${basedir}/logs"/>
     </target>
 
     <taskdef name="annotationProcessing" 

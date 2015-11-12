@@ -1,6 +1,7 @@
 ### PROJECT ###
 build/
 webapps/
+logs/
 
 ## PROJECT - GENERATED ###
 ws/etc/middleware/web.xml

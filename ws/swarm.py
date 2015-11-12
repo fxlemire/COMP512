@@ -4,7 +4,6 @@ import os
 import time
 
 VERBOSE = True
-DEBUG = True
 
 # Note: throughout this entire script, we assume that things will go as planned,
 # which might obviously not be the case...
@@ -111,7 +110,7 @@ def startClients(conf):
 			i = 0
 
 '''
-Start one client in the background, and return its PID
+Start one client in the background
 '''
 def startClient(id, ssh, conf, clientConf):
 	# Generate the swarm properties file for this client
@@ -129,7 +128,7 @@ def startClient(id, ssh, conf, clientConf):
 	# Caller closes ssh
 	
 '''
-Start a process without waiting for it to finish, and return its pid
+Start a process without waiting for it to finish
 '''
 def startLongProcess(ssh, cmd):
 	if VERBOSE:

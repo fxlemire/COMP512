@@ -561,4 +561,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         _temporaryOperations.put(id, operations);
     }
 
+    private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
+        LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+        if (operations == null) {
+            operations = new LinkedList<>();
+        }
+
+        operations.addLast(new ClientOperation(key, value, operationType));
+        _temporaryOperations.put(id, operations);
+    }
+
 }

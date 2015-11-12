@@ -6,6 +6,7 @@
 package middleware;
 
 import middleware.LockManager.LockManager;
+import server.Trace;
 import sun.util.resources.cldr.lo.CurrencyNames_lo;
 
 import java.net.URL;
@@ -74,12 +75,36 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean abort(int id) {
-		//TODO: destroy all actions that have been executed
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
+		ResourceManager proxy = customerProxies.checkOut();
+		proxy.abort(id);
+		customerProxies.checkIn(proxy);
+
+		proxy = carProxies.checkOut();
+		proxy.abort(id);
+		carProxies.checkIn(proxy);
+
+		proxy = flightProxies.checkOut();
+		proxy.abort(id);
+		flightProxies.checkIn(proxy);
+
+		proxy = roomProxies.checkOut();
+		proxy.abort(id);
+		roomProxies.checkIn(proxy);
 
 		return _transactionManager.abort(id, _lockManager);
 	}
 	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = carProxies.checkOut();
 		boolean result = proxy.addCars(id, location, numCars, carPrice);
 		carProxies.checkIn(proxy);
@@ -89,6 +114,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	public boolean addFlight(int id, int flightNumber, int numSeats,
 			int flightPrice) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = flightProxies.checkOut();
 		boolean result = proxy.addFlight(id, flightNumber, numSeats, flightPrice);
 		flightProxies.checkIn(proxy);
@@ -97,6 +127,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = roomProxies.checkOut();
 		boolean result = proxy.addRooms(id, location, numRooms, roomPrice);
 		roomProxies.checkIn(proxy);
@@ -105,12 +140,36 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean commit(int id) {
-		//TODO: save all actions that have been executed
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
+		ResourceManager proxy = customerProxies.checkOut();
+		proxy.commit(id);
+		customerProxies.checkIn(proxy);
+
+		proxy = carProxies.checkOut();
+		proxy.commit(id);
+		carProxies.checkIn(proxy);
+
+		proxy = flightProxies.checkOut();
+		proxy.commit(id);
+		flightProxies.checkIn(proxy);
+
+		proxy = roomProxies.checkOut();
+		proxy.commit(id);
+		roomProxies.checkIn(proxy);
 
 		return _transactionManager.commit(id, _lockManager);
 	}
 
 	public boolean deleteCars(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = carProxies.checkOut();
 		boolean result = proxy.deleteCars(id, location);
 		carProxies.checkIn(proxy);
@@ -119,6 +178,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean deleteCustomer(int id, int customerId) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = customerProxies.checkOut();
 		if (!proxy.checkCustomerExistence(id, customerId))
 		{
@@ -144,6 +208,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean deleteFlight(int id, int flightNumber) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = flightProxies.checkOut();
 		boolean result = proxy.deleteFlight(id, flightNumber);
 		flightProxies.checkIn(proxy);
@@ -152,6 +221,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean deleteRooms(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = roomProxies.checkOut();
 		boolean result = proxy.deleteRooms(id, location);
 		roomProxies.checkIn(proxy);
@@ -160,6 +234,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int newCustomer(int id) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
 		ResourceManager proxy = customerProxies.checkOut();
 		int result = proxy.newCustomer(id);
 		customerProxies.checkIn(proxy);
@@ -168,6 +246,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean newCustomerId(int id, int customerId) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		// Just call this at the customer RM. Normally the
 		// client won't use it by themselves.
 		ResourceManager proxy = customerProxies.checkOut();
@@ -178,6 +261,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryCars(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = carProxies.checkOut();
 		int result = proxy.queryCars(id, location);
 		carProxies.checkIn(proxy);
@@ -186,6 +274,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryCarsPrice(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = carProxies.checkOut();
 		int result = proxy.queryCarsPrice(id, location);
 		carProxies.checkIn(proxy);
@@ -194,6 +287,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public String queryCustomerInfo(int id, int customerId) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return null;
+		}
+
 		ResourceManager customerProxy = customerProxies.checkOut();
 		boolean exists = customerProxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(customerProxy);
@@ -238,6 +336,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryFlight(int id, int flightNumber) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = flightProxies.checkOut();
 		int result = proxy.queryFlight(id, flightNumber);
 		flightProxies.checkIn(proxy);
@@ -246,6 +349,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryFlightPrice(int id, int flightNumber) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = flightProxies.checkOut();
 		int result = proxy.queryFlightPrice(id, flightNumber);
 		flightProxies.checkIn(proxy);
@@ -254,6 +362,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryRooms(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = roomProxies.checkOut();
 		int result = proxy.queryRooms(id, location);
 		roomProxies.checkIn(proxy);
@@ -262,6 +375,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public int queryRoomsPrice(int id, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return -1;
+		}
+
 		ResourceManager proxy = roomProxies.checkOut();
 		int result = proxy.queryRoomsPrice(id, location);
 		roomProxies.checkIn(proxy);
@@ -270,6 +388,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean reserveCar(int id, int customerId, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = customerProxies.checkOut();
 		boolean exists = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
@@ -288,6 +411,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean reserveFlight(int id, int customerId, int flightNumber) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = customerProxies.checkOut();
 		boolean exists = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
@@ -307,6 +435,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	public boolean reserveItinerary(int id, int customerId,
 			Vector flightNumbers, String location, boolean car, boolean room) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
 
 		// If customer doesn't exist, bail now.
 		ResourceManager customerProxy = customerProxies.checkOut();
@@ -381,6 +513,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean reserveRoom(int id, int customerId, String location) {
+		if (!_transactionManager.hasValidId(id)) {
+			Trace.info("ID is not valid.");
+			return false;
+		}
+
 		ResourceManager proxy = customerProxies.checkOut();
 		boolean exists = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);

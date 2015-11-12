@@ -5,11 +5,14 @@ import middleware.LockManager.LockManager;
 import java.util.HashSet;
 
 public class TransactionManager {
+    private final Object _bidon = new Object();
     private static HashSet<Integer> _processedIds = new HashSet<>();
     private static int _transactionId = 0;
     
-    synchronized public int start() {
-        return _transactionId++;
+    public int start() {
+        synchronized(_bidon) {
+            return _transactionId++;
+        }
     }
 
     public boolean commit(int id, LockManager lockManager) {
@@ -24,13 +27,15 @@ public class TransactionManager {
         return id < _transactionId && !_processedIds.contains(id);
     }
 
-    private synchronized boolean unlockId(int id, LockManager lockManager) {
-        boolean isUnlocked = lockManager.UnlockAll(id);
+    private boolean unlockId(int id, LockManager lockManager) {
+        synchronized(_bidon) {
+            boolean isUnlocked = lockManager.UnlockAll(id);
 
-        if (isUnlocked) {
-            _processedIds.add(id);
+            if (isUnlocked) {
+                _processedIds.add(id);
+            }
+
+            return isUnlocked;
         }
-
-        return isUnlocked;
     }
 }

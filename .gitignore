@@ -5,6 +5,7 @@ webapps/
 ## PROJECT - GENERATED ###
 ws/etc/middleware/web.xml
 ws/etc/server/web.xml
+ws/swarm.config
 
 ### JAVA ###
 *.class

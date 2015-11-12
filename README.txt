@@ -39,6 +39,7 @@ New Ant properties:
  - ${autocli.mode}                transaction selection strategy for the
                                     autoclient (seq for sequential, rand for
                                     random)
+ - ${logdir}					  which directory to write logs to
 
 ==========
 
@@ -134,3 +135,11 @@ Transaction files for the autoclient:
 	simple.
 	
 ==========
+
+Swarm:
+
+	Swarm is a python script to do mass testing of the architecture. It depends
+	on the Paramiko module, which provides SSH capabilities. Paramiko itself
+	can be installed with pip. On Windows, PyCrypto should be installed first
+	or an appropriate C toolchain built. Prebuilt binaries for PyCrypto can be
+	found here http://www.voidspace.org.uk/python/modules.shtml#pycrypto

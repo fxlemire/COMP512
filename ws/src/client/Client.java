@@ -171,7 +171,7 @@ public class Client extends WSClient {
                     if (customer != -1) {
                         System.out.println("new customer id: " + customer);
                     } else {
-                        System.out.println("could not get a new customer id. Make sure your parameters are correct.");
+                        System.out.println("could not get a new customer id. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -278,7 +278,7 @@ public class Client extends WSClient {
                     if (seats != -1) {
                         System.out.println("Number of seats available: " + seats);
                     } else {
-                        System.out.println("could not fetch the number of seats. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the number of seats. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -302,7 +302,7 @@ public class Client extends WSClient {
                     if (numCars != -1) {
                         System.out.println("number of cars at this location: " + numCars);
                     } else {
-                        System.out.println("could not fetch the number of cars. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the number of cars. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -326,7 +326,7 @@ public class Client extends WSClient {
                     if (numRooms != -1) {
                         System.out.println("number of rooms at this location: " + numRooms);
                     } else {
-                        System.out.println("could not fetch the number of rooms. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the number of rooms. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -350,7 +350,7 @@ public class Client extends WSClient {
                     if (bill != null) {
                         System.out.println("Customer info: " + bill);
                     } else {
-                        System.out.println("could not fetch the customer info. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the customer info. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -374,7 +374,7 @@ public class Client extends WSClient {
                     if (price != -1) {
                         System.out.println("Price of a seat: " + price);
                     } else {
-                        System.out.println("could not fetch the flight price. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the flight price. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -398,7 +398,7 @@ public class Client extends WSClient {
                     if (price != -1) {
                         System.out.println("Price of a car at this location: " + price);
                     } else {
-                        System.out.println("could not fetch the car price. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the car price. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -422,7 +422,7 @@ public class Client extends WSClient {
                     if (price != 1) {
                         System.out.println("Price of rooms at this location: " + price);
                     } else {
-                        System.out.println("could not fetch the room price. Make sure your parameters are correct.");
+                        System.out.println("could not fetch the room price. Make sure your parameters are correct. Transaction id might be wrong or expired.");
                     }
                 }
                 catch(Exception e) {
@@ -552,7 +552,11 @@ public class Client extends WSClient {
                     int customer = getInt(arguments.elementAt(2));
 
                     boolean c = proxy.newCustomerId(id, customer);
-                    System.out.println("new customer id: " + customer);
+                    if (c) {
+                        System.out.println("new customer id: " + customer);
+                    } else {
+                        System.out.println("could not add new customer. Make sure your parameters are correct. Transaction id might be wrong or expired.");
+                    }
                 }
                 catch(Exception e) {
                     printErrorMessage(e);

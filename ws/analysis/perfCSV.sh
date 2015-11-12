@@ -1,7 +1,7 @@
 #!/bin/bash
 
 path=$1
-outputFile=$2
+outputFile="$2.csv"
 
 echo "method,time" > $outputFile
 

@@ -21,15 +21,34 @@ public class ClientOperation {
     }
 
     public RMItem getItem() {
-        return _item;
+        if (_operationType == Type.DELETE)
+        	return null;
+    	return _item;
     }
 
     public Type getOperationType() {
         return _operationType;
     }
 
-    public static RMItem getLatest(LinkedList<ClientOperation> operations) {
-        ClientOperation operation = operations.getLast();
-        return operation.getOperationType() == Type.WRITE ? operation.getItem() : null;
+    public static boolean hasOp(LinkedList<ClientOperation> operations, String key) {
+    	Iterator<ClientOperation> rev =  operations.descendingIterator();
+    	while(rev.hasNext()) {
+    		ClientOperation op = rev.next();
+    		if (op.getKey().equals(key))
+    			return true;
+    	}
+    	
+    	return false;
+    }
+    
+    public static RMItem getLatest(LinkedList<ClientOperation> operations, String key) {
+    	Iterator<ClientOperation> rev =  operations.descendingIterator();
+    	while(rev.hasNext()) {
+    		ClientOperation op = rev.next();
+    		if (op.getKey().equals(key))
+    			return op.getItem();
+    	}
+    	
+    	return null;
     }
 }

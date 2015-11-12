@@ -12,7 +12,7 @@ import javax.jws.WebService;
 public class ResourceManagerImpl implements server.ws.ResourceManager {	
 
     protected final Object bidon = new Object();
-    protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<>();
+    protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
     protected RMHashtable m_itemHT = new RMHashtable();
     
     // Basic operations on RMItem //
@@ -27,8 +27,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
             boolean wasFound = false;
 
-            if (operations != null) {
-                item = ClientOperation.getLatest(operations);
+            if (operations != null && ClientOperation.hasOp(operations, key)) {
+                item = ClientOperation.getLatest(operations, key);
                 wasFound = true;
             }
 
@@ -554,7 +554,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
-            operations = new LinkedList<>();
+            operations = new LinkedList<ClientOperation>();
         }
 
         operations.addLast(new ClientOperation(key, value, operationType));

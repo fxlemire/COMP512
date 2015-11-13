@@ -143,3 +143,9 @@ Swarm:
 	can be installed with pip. On Windows, PyCrypto should be installed first
 	or an appropriate C toolchain built. Prebuilt binaries for PyCrypto can be
 	found here http://www.voidspace.org.uk/python/modules.shtml#pycrypto
+	
+==========
+
+Scripts:
+perfCSV: ./perfCSV path/to/csvFile fileOutputNameWithoutExtension
+         Outputs a csv file with methods performances

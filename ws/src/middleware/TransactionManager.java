@@ -35,7 +35,7 @@ public class TransactionManager {
         synchronized(_bidon) {
             int transactionId = _transactionId++;
             _currentTransactions.put(transactionId, new boolean[4]);
-            _ttls.put(transactionId, new TTL(transactionId, _rm, 20));
+            _ttls.put(transactionId, new TTL(transactionId, _rm, 60));
             return transactionId;
         }
     }

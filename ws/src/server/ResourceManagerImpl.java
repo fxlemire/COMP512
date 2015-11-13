@@ -195,10 +195,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	            // Do reservation.
 	            cust.reserve(key, location, item.getPrice());
 	            writeData(id, cust.getKey(), cust);
-	            
+
 	            // Decrease the number of available items in the storage.
 	            item.setCount(item.getCount() - 1);
 	            item.setReserved(item.getReserved() + 1);
+
+                addTemporaryOperation(id, key, item, ClientOperation.Type.WRITE);
 	            Trace.info("RM::reserveItem(" + id + ", " + customerId + ", " 
 	                    + key + ", " + location + ") OK.");
 	            return true;

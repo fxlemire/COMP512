@@ -1,6 +1,12 @@
 ### PROJECT ###
 build/
 webapps/
+logs/
+
+## PROJECT - GENERATED ###
+ws/etc/middleware/web.xml
+ws/etc/server/web.xml
+ws/swarm.config
 
 ### JAVA ###
 *.class
@@ -76,3 +82,5 @@ local.properties
 ### VARIOUS ### 
 # vim backup 
 *.*~
+# csv
+**/*.csv

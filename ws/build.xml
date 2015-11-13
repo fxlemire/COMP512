@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="help" name="project">
 
+	<!-- Allow swarm to override any properties of this xml -->
+	<property file="swarm_${swarmid}.properties" />
+
+	<property name="logdir" value="${basedir}/logs"/>
+	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
 	<property name="rm.flight.name" value="rm_flight"/>
@@ -35,7 +40,18 @@
 	<property name="mw.host" value="localhost" />
 	<property name="mw.port" value="38080"/>
     <property name="mw.debugport" value="38090"/>
+	
+	<!-- Properties for the automated client -->
+	<property name="autocli.txnrate" value="10000" />
+	<property name="autocli.txnfile" value="./autoruns/onecli_manyrms.txt" />
+	<property name="autocli.ntxn" value="2000" />
+	<property name="autocli.mode" value="seq" />
 
+	<!-- Get current time in a property (for potential use later) -->
+	<tstamp>
+		<format property="now" pattern="yyyy_MM_dd_HH_mm_ss" />
+	</tstamp>
+	
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
         <pathelement location="${java.home}/../jre/lib/rt.jar"/>
@@ -57,6 +73,7 @@
         <mkdir dir="${basedir}/build/classes"/>
         <mkdir dir="${basedir}/build/war"/>
         <mkdir dir="${basedir}/webapps"/>
+		<mkdir dir="${basedir}/logs"/>
     </target>
 
     <taskdef name="annotationProcessing" 
@@ -93,6 +110,32 @@
 		</javac>
 	</target>
 	
+	<target name="create-webxml">
+		<!-- Delete previous web.xml -->
+		<delete file="etc/${service.target}/web.xml" />
+		
+		<!-- Load the environment for this target -->
+		<loadfile srcFile="${service.target}_environment.xml" property="webenv"/>
+		
+		<!-- Load the web.xml template, replacing into it the environment for
+		the target. -->
+		<loadfile property="webxml" srcFile="web_template.xml">
+			<filterchain>
+				<!-- Do two expansion phases. The first one replaces ${webenv}
+				in the template by the environment for the target, and the
+				second expands any properties specified in the environment
+				itself -->
+				<filterreader classname="org.apache.tools.ant.filters.ExpandProperties" />
+				<filterreader classname="org.apache.tools.ant.filters.ExpandProperties" />
+				
+			</filterchain>
+		</loadfile>
+		
+		<!-- Write out the finished web.xml -->
+		<touch file="etc/${service.target}/web.xml" />
+		<echo file="etc/${service.target}/web.xml" message="${webxml}" />
+	</target>
+	
 	<!-- Create the WAR file for a given target webservice. -->
     <target name="create-war">
         <war 
@@ -120,7 +163,8 @@
 	<!-- Start tomcat with a given webservice. -->
     <target name="start-tomcat" depends="build-main">
         <echo message="Starting Tomcat and deploying service ... "/>
-        <java fork="true" classname="main.${service.target}.Main">
+        <java fork="true" classname="main.${service.target}.Main" 
+			output="${logdir}/${service.name}_${now}.log">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build"/>
@@ -177,6 +221,9 @@
 	
 	<!-- Generate and run the middleware. -->
 	<target name="middleware" depends="setup">
+		<antcall target="create-webxml">
+			<param name="service.target" value="middleware" />
+		</antcall>
 		<antcall target="generate-middleware" />
 		<antcall target="ws">
 			<propertyset id="mw_props">
@@ -196,8 +243,49 @@
 		</antcall>
 	</target>
 	
+	<!--====== Individual targets for the RMS ======-->
+	<target name="rm_flight">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="flight" />
+		</antcall>
+	</target>
+	
+	<target name="rm_car">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="car" />
+		</antcall>
+	</target>
+	
+	<target name="rm_room">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="room" />
+		</antcall>
+	</target>
+	
+	<target name="rm_customer">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
+		<antcall target="rm">
+			<param name="rm_name" value="customer" />
+		</antcall>
+	</target>
+	<!--============================================-->
+	
 	<!-- Generate and run all RMs in parallel. -->
 	<target name="rms">
+		<antcall target="create-webxml">
+			<param name="service.target" value="server" />
+		</antcall>
 		<parallel>
 			<antcall target="rm">
 				<param name="rm_name" value="flight" />
@@ -245,11 +333,28 @@
             <arg value="${mw.port}"/>
         </java>
     </target>
+	
+	<target name="autoclient" depends="build-client">
+        <java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
+			<arg value="${autocli.txnfile}"/>
+            <arg value="${autocli.txnrate}"/>
+            <arg value="${autocli.ntxn}"/>
+			<arg value="${autocli.mode}"/>
+        </java>
+    </target>
 
     <target name="help">
         <echo message="rms:  Builds and deploys all the RMs."/>
-		<echo message="middleware:  Builds, deploys and runs the middleware."/>
-        <echo message="client:  Builds and runs the client."/>
+		<echo message="middleware:  Builds and deploys the middleware."/>
+        <echo message="client:  Builds and runs the interactive client."/>
+		<echo message="autoclient:  Builds and runs the automated client."/>
     </target>
     
 </project>

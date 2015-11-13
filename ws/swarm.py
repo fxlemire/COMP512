@@ -142,11 +142,9 @@ Create a file with the given contents and upload it to the specified location.
 '''
 def uploadFile(ssh, location, contents):
 	
-	sftp = ssh.open_sftp()
-	f = sftp.file(location, mode='w')
-	f.write(contents)
-	f.close()
-	sftp.close()
+	simpleExec(ssh, "touch " + location)
+	simpleExec(ssh, "echo \"" + contents + "\" > " + location)
+	simpleExec(ssh, "chmod 777 " + location)
 
 '''
 Start a webservice
@@ -221,6 +219,7 @@ ssh.connect(conf[CFG_MW_HOST], username=conf[CFG_USER], password=conf[CFG_PASS])
 
 # Create log directories (local and remote)
 simpleExec(ssh, "mkdir -p " + conf[CFG_LOG_DIR])
+simpleExec(ssh, "chmod 777 " + conf[CFG_LOG_DIR])
 ssh.close()
 os.makedirs(conf[CFG_LOG_DEST])
 

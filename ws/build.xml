@@ -42,9 +42,9 @@
     <property name="mw.debugport" value="38090"/>
 	
 	<!-- Properties for the automated client -->
-	<property name="autocli.txnrate" value="1" />
-	<property name="autocli.txnfile" value="./autoruns/t1.txt" />
-	<property name="autocli.ntxn" value="-1" />
+	<property name="autocli.txnrate" value="10000" />
+	<property name="autocli.txnfile" value="./autoruns/onecli_manyrms.txt" />
+	<property name="autocli.ntxn" value="2000" />
 	<property name="autocli.mode" value="seq" />
 
 	<!-- Get current time in a property (for potential use later) -->

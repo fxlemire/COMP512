@@ -632,6 +632,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private void log(String method, int id, long start) {
         long end = System.nanoTime();
-        System.out.println("[PERF] " + method + " " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+        System.out.println("[PERF] " + method + " " + id + ": " + (int) ((end - start) / 1000) + "ms");
     }
 }

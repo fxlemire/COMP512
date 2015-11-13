@@ -6,7 +6,7 @@
 package middleware;
 
 import middleware.LockManager.LockManager;
-import server.Trace;
+import server.*;
 
 import java.net.URL;
 import java.util.*;
@@ -116,8 +116,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] abort " + id + ": " + (int) ((end - start) / 1e6) + "ms");	
+		log("abort", id, start);
 		return result;
 	}
 	
@@ -129,7 +128,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("addCars", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 	
 			ResourceManager proxy = carProxies.checkOut();
@@ -137,8 +142,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			carProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] addcars " + id + ": " + (int) ((end - start) / 1e6) + "ms");	
+		log("addCars", id, start);
 		return result;
 	}
 
@@ -151,14 +155,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
+			try {
+				_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("addFlight", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
 	
 			ResourceManager proxy = flightProxies.checkOut();
 			result = proxy.addFlight(id, flightNumber, numSeats, flightPrice);
 			flightProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] addflight " + id + ": " + (int) ((end - start) / 1e6) + "ms");	
+		log("addFlight", id, start);
 		return result;
 	}
 
@@ -169,15 +179,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("addRooms", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
 	
 			ResourceManager proxy = roomProxies.checkOut();
 			result = proxy.addRooms(id, location, numRooms, roomPrice);
 			roomProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] addrooms " + id + ": " + (int) ((end - start) / 1e6) + "ms");	
+		log("addRooms", id, start);
 		return result;
 	}
 
@@ -223,8 +238,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] commit " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("commit", id, start);
 		return result;
 	}
 
@@ -235,6 +249,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result =  false;
 		} else {
+			try {
+				_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("deleteCars", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 	
 			ResourceManager proxy = carProxies.checkOut();
@@ -242,8 +263,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			carProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] deletecars " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("deleteCars", id, start);
 		return result;
 	}
 
@@ -254,6 +274,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
+			try {
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("deleteCustomer", id, start);
+				return false;
+			}
 
 			ResourceManager proxy = customerProxies.checkOut();
 			if (!proxy.checkCustomerExistence(id, customerId))
@@ -285,8 +312,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] deletecustomer " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("deleteCustomer", id, start);
 		return result;
 	}
 
@@ -297,7 +323,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("deleteFlight", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
 	
 			ResourceManager proxy = flightProxies.checkOut();
@@ -305,8 +337,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			flightProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] deleteflight " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("deleteFlight", id, start);
 		return result;
 	}
 
@@ -318,7 +349,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("deleteRooms", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
 	
 			ResourceManager proxy = roomProxies.checkOut();
@@ -326,8 +363,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			roomProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] deleterooms " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("deleteRooms", id, start);
 		return result;
 	}
 
@@ -345,8 +381,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			customerProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] newcustomer " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("newCustomer", id, start);
 		return result;
 	}
 
@@ -357,6 +392,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result =  false;
 		} else {
+			try {
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("newCustomerId", id, start);
+				return false;
+			}
 			_transactionManager.addTransactionRM(id, TransactionManager.CUSTOMER);
 	
 			// Just call this at the customer RM. Normally the
@@ -365,8 +407,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			result = proxy.newCustomerId(id, customerId);
 			customerProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] newcustomerid " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("newCustomerId", id, start);
 		return result;
 	}
 
@@ -377,13 +418,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = -1;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Car.getKey(location), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryCars", id, start);
+				return -1;
+			}
 			ResourceManager proxy = carProxies.checkOut();
 			result = proxy.queryCars(id, location);
 			carProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] querycars " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryCars", id, start);
 		return result;
 	}
 
@@ -394,14 +440,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = -1;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Car.getKey(location), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryCarsPrice", id, start);
+				return -1;
+			}
 			ResourceManager proxy = carProxies.checkOut();
 			result = proxy.queryCarsPrice(id, location);
 			carProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] querycars " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryCarsPrice", id, start);
 		return result;
 	}
 
@@ -412,7 +463,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = null;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryCustomerInfo", id, start);
+				return null;
+			}
 			ResourceManager customerProxy = customerProxies.checkOut();
 			boolean exists = customerProxy.checkCustomerExistence(id, customerId);
 			customerProxies.checkIn(customerProxy);
@@ -455,8 +512,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] querycustomerinfo " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryCustomerInfo", id, start);
 		return result;
 	}
 
@@ -467,13 +523,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = -1;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryFlight", id, start);
+				return -1;
+			}
 			ResourceManager proxy = flightProxies.checkOut();
 			result = proxy.queryFlight(id, flightNumber);
 			flightProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] queryflight " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryFlight", id, start);
 		return result;
 	}
 
@@ -484,12 +545,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = -1;
 		} else {
+			try {
+				_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryFlightPrice", id, start);
+				return -1;
+			}
 			ResourceManager proxy = flightProxies.checkOut();
 			result = proxy.queryFlightPrice(id, flightNumber);
 			flightProxies.checkIn(proxy);
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] queryflightprice " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryFlightPrice", id, start);
 		return result;
 	}
 
@@ -500,14 +567,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = -1;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Room.getKey(location), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryRooms", id, start);
+				return -1;
+			}
 			ResourceManager proxy = roomProxies.checkOut();
 			result = proxy.queryRooms(id, location);
 			roomProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] queryrooms " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryRooms", id, start);
 		return result;
 	}
 
@@ -518,14 +590,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result= -1;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Room.getKey(location), LockManager.READ);
+			} catch (Exception e) {
+				abort(id);
+				log("queryRoomsPrice", id, start);
+				return -1;
+			}
 			ResourceManager proxy = roomProxies.checkOut();
 			result = proxy.queryRoomsPrice(id, location);
 			roomProxies.checkIn(proxy);
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] queryRoomsPrice " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("queryRoomsPrice", id, start);
 		
 		return result;
 	}
@@ -537,7 +614,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("reserveCar", id, start);
+				return false;
+			}
 			ResourceManager proxy = customerProxies.checkOut();
 			boolean exists = proxy.checkCustomerExistence(id, customerId);
 			customerProxies.checkIn(proxy);
@@ -553,8 +637,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			else
 				result = false;
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] reservecar " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("reserveCar", id, start);
 		
 		return result;
 	}
@@ -566,7 +649,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("reserveFlight", id, start);
+				return false;
+			}
 			ResourceManager proxy = customerProxies.checkOut();
 			boolean exists = proxy.checkCustomerExistence(id, customerId);
 			customerProxies.checkIn(proxy);
@@ -581,8 +671,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				
 			} else result = false;
 		}
-		long end = System.nanoTime();
-		System.out.println("[PERF] reserveflight " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("reserveFlight", id, start);
 		return result;
 	}
 
@@ -594,7 +683,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
-
+			try {
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("reserveItinerary", id, start);
+				return false;
+			}
 			// If customer doesn't exist, bail now.
 			ResourceManager customerProxy = customerProxies.checkOut();
 			boolean exists = customerProxy.checkCustomerExistence(id, customerId);
@@ -606,6 +701,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 			else
 			{
+				try {
+					_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
+					_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
+					for (int i = 0; i < flightNumbers.size(); ++i) {
+						_lockManager.Lock(id, Flight.getKey(Integer.parseInt((String) flightNumbers.elementAt(i))), LockManager.WRITE);
+					}
+				} catch (Exception e) {
+					abort(id);
+					log("reserveItinerary", id, start);
+					return false;
+				}
+
 				// Have a simple management of proxies here.
 				_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
 				_transactionManager.addTransactionRM(id, TransactionManager.CAR);
@@ -671,8 +778,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] reserveitinerary " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("reserveItinerary", id, start);
 		return result;
 	}
 
@@ -683,6 +789,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			Trace.info("ID is not valid.");
 			result = false;
 		} else {
+			try {
+				_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
+				_lockManager.Lock(id, Customer.getKey(customerId), LockManager.WRITE);
+			} catch (Exception e) {
+				abort(id);
+				log("reserveRoom", id, start);
+				return false;
+			}
 			ResourceManager proxy = customerProxies.checkOut();
 			boolean exists = proxy.checkCustomerExistence(id, customerId);
 			customerProxies.checkIn(proxy);
@@ -698,24 +812,31 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			} else result = false;
 		}
 		
-		long end = System.nanoTime();
-		System.out.println("[PERF] reserveroom " + id + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("reserveRoom", id, start);
 		return result;
 	}
 
 	public int start() {
 		long start = System.nanoTime();
 		int result = _transactionManager.start();
-		long end = System.nanoTime();
-		System.out.println("[PERF] start " + result + ": " + (int) ((end - start) / 1e6) + "ms");
+		log("start", result, start);
 		return result;
 	}
 
 	public boolean checkCustomerExistence(int id, int customerId) {
 		// Again, this method probably won't be called by the client.
+		long start = System.nanoTime();
+		try {
+			_lockManager.Lock(id, Customer.getKey(customerId), LockManager.READ);
+		} catch (Exception e) {
+			abort(id);
+			log("checkCustomerExistence", id, start);
+			return false;
+		}
 		ResourceManager proxy = customerProxies.checkOut();
 		boolean result = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
+		log("checkCustomerExistence", id, start);
 		return result;
 	}
 	
@@ -782,5 +903,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		bill.add(bill.size(), "Total: $" + total);
 
 		return bill;
+	}
+
+	private void log(String method, int transactionId, long start) {
+		long end = System.nanoTime();
+		System.out.println("[PERF] " + method + " " + transactionId + ": " + (int) ((end - start) / 1000) + "ms");
 	}
 }

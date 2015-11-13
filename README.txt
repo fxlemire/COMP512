@@ -131,8 +131,7 @@ Transaction files for the autoclient:
 		abort,%0,true,==,true
 		
 	Note that you will still need to specify a commit for the transaction, even
-	if it's never going to be executed. This is because the parsing code is very
-	simple.
+	if it's never going to be executed.
 	
 ==========
 
@@ -143,6 +142,21 @@ Swarm:
 	can be installed with pip. On Windows, PyCrypto should be installed first
 	or an appropriate C toolchain built. Prebuilt binaries for PyCrypto can be
 	found here http://www.voidspace.org.uk/python/modules.shtml#pycrypto
+	
+	To run swarm, simply execute the python file. A file named swarm.config must
+	also exist next to the script.
+	
+	See swarm.example.config to have an idea of what to put in the file.
+	Most properties are self-explanatory, but specifically, here are some
+	explanations:
+		- ant.logdir: destination of the logs on the distributed machines
+		- logs_destination: destination of the logs on the local machine
+				(i.e. where will the logs be collected to)
+		- user/pass: SSH credentials to log into the distributed machines
+		- code: location of the code on the distributed machines
+		
+	There are currently some permission problems with the Trottier machines so
+	you might not be able to collect logs.
 	
 ==========
 

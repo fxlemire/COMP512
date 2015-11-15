@@ -1,12 +1,12 @@
 ### PROJECT ###
 build/
 webapps/
-logs/
 
 ## PROJECT - GENERATED ###
 ws/etc/middleware/web.xml
 ws/etc/server/web.xml
 ws/swarm.config
+ws/swarm.trot.config
 
 ### JAVA ###
 *.class
@@ -84,3 +84,5 @@ local.properties
 *.*~
 # csv
 **/*.csv
+# log
+**/*.log

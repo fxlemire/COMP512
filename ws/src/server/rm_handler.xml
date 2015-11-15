@@ -1,0 +1,9 @@
+<jws:handler-chains xmlns:jws="http://java.sun.com/xml/ns/javaee">
+
+	<jws:handler-chain name="RmHandlerChain">
+		<jws:handler>
+			<jws:handler-class>server.PerfHandler</jws:handler-class>
+		</jws:handler>
+	</jws:handler-chain>
+	
+</jws:handler-chains>

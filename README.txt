@@ -21,6 +21,10 @@ Changes to the project structure:
  - web_template.xml               template to generate /etc/<target>/web.xml
  - middleware_environment.xml     environment for /etc/middleware/web.xml
  - server_environment.xml     environment for /etc/server/web.xml
+
+==========
+
+Ant version required: >= 1.9.1
  
 ==========
 

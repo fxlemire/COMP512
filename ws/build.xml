@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project basedir="." default="help" name="project">
+<project basedir="." default="help" name="project"
+	xmlns:if="ant:if" xmlns:unless="ant:unless">
 
 	<!-- Allow swarm to override any properties of this xml -->
 	<property file="swarm_${swarmid}.properties" />
 
-	<property name="logdir" value="${basedir}/logs"/>
-	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
 	<property name="rm.flight.name" value="rm_flight"/>
@@ -163,8 +162,25 @@
 	<!-- Start tomcat with a given webservice. -->
     <target name="start-tomcat" depends="build-main">
         <echo message="Starting Tomcat and deploying service ... "/>
-        <java fork="true" classname="main.${service.target}.Main" 
-			output="${logdir}/${service.name}_${now}.log">
+        <!-- Version that redirects output to a log directory -->
+		<java fork="true" classname="main.${service.target}.Main" 
+			output="${logdir}/${service.name}_${now}.log"
+			if:set="logdir">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build"/>
+            </classpath>
+            <jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:server=y,transport=dt_socket,address=${service.debugport},suspend=n"/>
+            <jvmarg value="-Djava.security.policy=${basedir}/etc/${service.target}/server.policy"/>
+            <arg value="${service.name}"/>
+            <arg value="${service.port}"/>
+            <arg value="${basedir}/webapps"/>
+        </java>
+		
+		<!-- Version that has normal output -->
+		<java fork="true" classname="main.${service.target}.Main" 
+			unless:set="logdir">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build"/>
@@ -336,6 +352,35 @@
 	
 	<target name="autoclient" depends="build-client">
         <java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
+			<arg value="${autocli.txnfile}"/>
+            <arg value="${autocli.txnrate}"/>
+            <arg value="${autocli.ntxn}"/>
+			<arg value="${autocli.mode}"/>
+        </java>
+		
+		<java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log"
+			if:set="logdir">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
+			<arg value="${autocli.txnfile}"/>
+            <arg value="${autocli.txnrate}"/>
+            <arg value="${autocli.ntxn}"/>
+			<arg value="${autocli.mode}"/>
+        </java>
+		
+		<java classname="client.AutoClient" unless:set="logdir">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

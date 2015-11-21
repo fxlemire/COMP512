@@ -3,7 +3,6 @@ package middleware;
 import middleware.LockManager.LockManager;
 
 import java.util.HashMap;
-import java.util.HashSet;
 
 public class TransactionManager {
     public final static int CUSTOMER = 0;
@@ -14,28 +13,25 @@ public class TransactionManager {
     private final Object _bidon = new Object();
     private HashMap<Integer, boolean[]> _currentTransactions = new HashMap<Integer, boolean[]>();
     private HashMap<Integer, TTL> _ttls = new HashMap<Integer, TTL>();
-    private ResourceManagerImpl _rm;
     private int _transactionId = 0;
     private static boolean _isInstantiated = false;
+    private static TransactionManager tm = null;
 
-    private TransactionManager(ResourceManagerImpl rm) {
-        _rm = rm;
-    }
+    private TransactionManager() { }
 
-    public static TransactionManager getInstance(ResourceManagerImpl rm) {
-        TransactionManager tm = null;
+    public static TransactionManager getInstance() {
         if (!_isInstantiated) {
-            tm = new TransactionManager(rm);
+            tm = new TransactionManager();
             _isInstantiated = true;
         }
         return tm;
     }
 
-    public int start() {
+    public int start(ResourceManagerImpl rm) {
         synchronized(_bidon) {
             int transactionId = _transactionId++;
             _currentTransactions.put(transactionId, new boolean[4]);
-            _ttls.put(transactionId, new TTL(transactionId, _rm, 60));
+            _ttls.put(transactionId, new TTL(transactionId, rm, 60));
             return transactionId;
         }
     }

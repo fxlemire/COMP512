@@ -14,11 +14,11 @@ import javax.xml.ws.handler.soap.SOAPMessageContext;
  */
 public class PerfHandler implements SOAPHandler<SOAPMessageContext> {
 
-	private static final String TIME_KEY = "perf_time";
-	private static final String NAME_KEY = "method_name";
-	private static final String TXN_ID_KEY = "txn_id";
-	private static final Object DUMMY_TXN_ID = new Object();
-	private static final Object NO_TXN_ID = new Object();
+	public static final String TIME_KEY = "perf_time";
+	public static final String NAME_KEY = "method_name";
+	public static final String TXN_ID_KEY = "txn_id";
+	public static final Object DUMMY_TXN_ID = new Object();
+	public static final Object NO_TXN_ID = new Object();
 	
 	public boolean handleMessage(SOAPMessageContext mc) {
 		Boolean outbound = (Boolean) mc.get(MessageContext.MESSAGE_OUTBOUND_PROPERTY);
@@ -28,7 +28,6 @@ public class PerfHandler implements SOAPHandler<SOAPMessageContext> {
 			SOAPElement req = (SOAPElement) msg.getSOAPBody().getFirstChild();
 	        if (!outbound) {
 	        	// Add some information to the message context for later retrieval
-	        	
 	            mc.put(TIME_KEY, System.nanoTime()); // Current time
 	            
 	            if (!mc.containsKey(NAME_KEY))
@@ -53,22 +52,21 @@ public class PerfHandler implements SOAPHandler<SOAPMessageContext> {
 	        	System.out.println("[PERF] " + method + " " + txnId + ": " + elapsedUs + "us");
 	        }
 		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
+			throw new RuntimeException(e);
 		}
         
         return true;
 	}
 
 	
-	protected String getMethodName(SOAPElement req) {
+	public static String getMethodName(SOAPElement req) {
 		String nodeName = req.getNodeName();
 		
         // Name of method appears as nc2:xxxx in the XML 
         return nodeName.substring(nodeName.indexOf(':') + 1);
 	}
 
-	protected Object getTxnId(String methodName, SOAPElement req) {
+	public static Object getTxnId(String methodName, SOAPElement req) {
 		if (methodName.equals("start")) {
 	    	// The real txn id will appear at the output side
 	    	return DUMMY_TXN_ID; 

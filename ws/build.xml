@@ -73,6 +73,13 @@
         <mkdir dir="${basedir}/build/war"/>
         <mkdir dir="${basedir}/webapps"/>
 		<mkdir dir="${basedir}/logs"/>
+		
+		<!-- Fred: this is kinda ugly but whatever. -->
+		<copy file="${basedir}/src/server/rm_handler.xml" 
+			todir="${basedir}/build/classes/server/" />
+			
+		<copy file="${basedir}/src/middleware/mw_handler.xml" 
+			todir="${basedir}/build/classes/middleware/" />
     </target>
 
     <taskdef name="annotationProcessing" 

@@ -4,6 +4,9 @@
 		<jws:handler>
 			<jws:handler-class>middleware.MwHandler</jws:handler-class>
 		</jws:handler>
+		<jws:handler>
+			<jws:handler-class>server.PerfHandler</jws:handler-class>
+		</jws:handler>
 	</jws:handler-chain>
 	
 </jws:handler-chains>

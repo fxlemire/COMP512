@@ -5,9 +5,9 @@
 
 package server;
 
-import java.io.FileOutputStream;
+import Util.Trace;
+
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -95,6 +95,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			//Technically this isn't really problematic.
 			e.printStackTrace();
 		}
+
+        Trace.info("Abort confirm for " + id);
 		
 		return true;
     }
@@ -109,7 +111,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
-            Trace.info("Commit confirmed for " + id);
+            Trace.info("Vote for " + id + ": " + true);
             return true;
         }
 
@@ -133,19 +135,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
                     break;
             }
         }
-    	
-        try
-        {
-        	ObjectOutputStream next_oos = new ObjectOutputStream(
-											new FileOutputStream(
-												thisRmName + "." + id + ".next"));
-        	next_oos.writeObject(next_write);
-        	next_oos.writeObject(next_remove);
-        	next_oos.close();
-        }
-        catch (IOException e)
-        {
-        	Trace.error(e.toString());
+
+        List<Object> objects = new ArrayList<>();
+        objects.add(next_write);
+        objects.add(next_remove);
+
+        boolean isPersisted = Trace.persist("data/" + thisRmName + "." + id + ".next", objects, false);
+
+        if (!isPersisted) {
         	result = false;
         }
         
@@ -157,7 +154,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     // Commit a transaction.
     public boolean commit(int id) {
         synchronized(bidon) {
-
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
@@ -188,7 +184,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         }
         
         try {
-			Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
+			Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));
 		} catch (IOException e) {
 			//Technically this isn't really problematic.
 			e.printStackTrace();

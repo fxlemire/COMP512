@@ -5,6 +5,7 @@
 
 package middleware;
 
+import Util.Trace;
 import middleware.LockManager.LockManager;
 import server.*;
 
@@ -824,6 +825,4 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
 		return bill;
 	}
-
-
 }

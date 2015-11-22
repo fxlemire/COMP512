@@ -67,6 +67,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return true;
         }
     }
+    
+    public boolean prepare(int id) {
+    	//Dummy for now - just say we're ready.
+    	
+    	// This trace will need to occur AFTER we wrote the data to disk
+    	Trace.info("Vote for " + id + ": " + true);
+    	return true;
+    }
 
     // Commit a transaction.
     public boolean commit(int id) {
@@ -75,7 +83,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
-                Trace.info("No transactions were done: nothing to commit.");
+                Trace.info("Commit confirmed for " + id);
                 return true;
             }
 
@@ -97,6 +105,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
 
             _temporaryOperations.remove(id);
+            
+            Trace.info("Commit confirmed for " + id);
             return true;
         }
     }

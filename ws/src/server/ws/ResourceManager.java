@@ -165,4 +165,8 @@ public interface ResourceManager {
     /* Crash method for RMs. */
     @WebMethod
     public boolean selfDestruct();
+    
+    /* Prepare a transaction to be committed (vote phase) */
+    @WebMethod
+    public boolean prepare(int id);
 }

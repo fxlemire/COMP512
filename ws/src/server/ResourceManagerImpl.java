@@ -5,10 +5,18 @@
 
 package server;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="rm_handler.xml")
@@ -17,6 +25,21 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
     protected RMHashtable m_itemHT = new RMHashtable();
+    protected String thisRmName;
+    
+    public ResourceManagerImpl()
+    {
+    	Context env = null;
+		try
+		{
+			env = (Context) new InitialContext().lookup("java:comp/env");
+			thisRmName = (String) env.lookup("name");
+		} 
+		catch (NamingException e)
+		{
+			throw new RuntimeException(e);
+		}
+    }
     
     // Basic operations on RMItem //
 
@@ -64,17 +87,71 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     public boolean abort(int id) {
         synchronized(bidon) {
             _temporaryOperations.remove(id);
-            return true;
         }
+        
+        try {
+			Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
+		} catch (IOException e) {
+			//Technically this isn't really problematic.
+			e.printStackTrace();
+		}
+		
+		return true;
     }
 
     @Override
     public boolean prepare(int id) {
-    	//Dummy for now - just say we're ready.
+    	RMHashtable next_write = new RMHashtable();
+    	HashSet<String> next_remove = new HashSet<String>();
     	
+    	boolean result = true;
+    	
+        LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+        if (operations == null) {
+            Trace.info("Commit confirmed for " + id);
+            return true;
+        }
+
+        Iterator<ClientOperation> it = operations.iterator();
+
+        while (it.hasNext()) {
+            ClientOperation op = it.next();
+
+            switch (op.getOperationType()) {
+                case WRITE:
+                    next_write.put(op.getKey(), op.getItem());
+                    break;
+                case DELETE:
+                	// In next_write, we only want the latest version of the things
+                	// we'll write. So something that gets deleted shouldn't be in there
+                	// (This could happen if we did w(x), d(x), commit)
+                	next_write.remove(op.getKey());
+                	next_remove.add(op.getKey());
+                    break;
+                default:
+                    break;
+            }
+        }
+    	
+        try
+        {
+        	ObjectOutputStream next_oos = new ObjectOutputStream(
+											new FileOutputStream(
+												thisRmName + "." + id + ".next"));
+        	next_oos.writeObject(next_write);
+        	next_oos.writeObject(next_remove);
+        	next_oos.close();
+        }
+        catch (IOException e)
+        {
+        	Trace.error(e.toString());
+        	result = false;
+        }
+        
     	// This trace will need to occur AFTER we wrote the data to disk
-    	Trace.info("Vote for " + id + ": " + true);
-    	return true;
+    	Trace.info("Vote for " + id + ": " + result);
+    	return result;
     }
 
     // Commit a transaction.
@@ -108,8 +185,16 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             _temporaryOperations.remove(id);
             
             Trace.info("Commit confirmed for " + id);
-            return true;
         }
+        
+        try {
+			Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
+		} catch (IOException e) {
+			//Technically this isn't really problematic.
+			e.printStackTrace();
+		}
+        
+        return true;
     }
     
     // Basic operations on ReservableItem //

@@ -19,7 +19,7 @@ import javax.naming.NamingException;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="mw_handler.xml")
-public class ResourceManagerImpl implements server.ws.ResourceManager {
+public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	
 	private static final int PROXY_POOL_SIZE = 4;
 	
@@ -169,6 +169,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		return result;
 	}
 
+	@Override
 	public boolean crash(String rm) {
 		boolean result;
 
@@ -614,6 +615,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		return result;
 	}
 
+	@Override
 	public boolean reserveItinerary(int id, int customerId,
 			Vector flightNumbers, String location, boolean car, boolean room) {
 		boolean result; 
@@ -738,6 +740,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		return result;
 	}
 
+	@Override
 	public int start() {
 		int result = _transactionManager.start(this);
 		return result;
@@ -755,10 +758,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		boolean result = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
 		return result;
-	}
-	
-	public boolean prepare(int id) {
-		throw new RuntimeException("Middleware does not prepare transactions.");
 	}
 	
 	public boolean shutdown() {

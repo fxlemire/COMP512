@@ -12,7 +12,7 @@ import javax.jws.WebService;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="rm_handler.xml")
-public class ResourceManagerImpl implements server.ws.ResourceManager {	
+public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
@@ -67,7 +67,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return true;
         }
     }
-    
+
+    @Override
     public boolean prepare(int id) {
     	//Dummy for now - just say we're ready.
     	
@@ -546,19 +547,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         boolean isReserved = reserveItem(id, customerId, Room.getKey(location), location);
         return isReserved;
     }
-    
-
-    // Reserve an itinerary.
-    
-    public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
-                                    String location, boolean car, boolean room) {
-        return false;
-    }
-
-    public int start() {
-        //dummy implementation
-        return -1;
-    }
 
 	public boolean checkCustomerExistence(int id, int customerId) {
 		Trace.info("RM::checkCustomerExistence(" + id + ", " + customerId + ") called.");
@@ -597,10 +585,5 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 System.exit(status);
             }
         }, 1000);
-    }
-
-    /** dummy implementation */
-    public boolean crash(String rm) {
-        return true;
     }
 }

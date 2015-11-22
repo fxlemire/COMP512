@@ -624,6 +624,28 @@ public class Client extends WSClient {
 			case 26: //Shutdown
 				proxy.shutdown();
 				return;
+
+            case 27: //crash
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+
+                try {
+                    String rm = getString(arguments.elementAt(1));
+                    System.out.println("Crashing " + rm + " RM...");
+                    boolean isCrashed = proxy.crash(rm);
+
+                    if (isCrashed) {
+                        System.out.println(rm + " RM has been successfully crashed.");
+                    } else {
+                        System.out.println(rm + " RM's survival instinct prevented the crashing process. Long live the " + rm + " RM!");
+                    }
+                } catch(Exception e) {
+                    printErrorMessage(e);
+                }
+                break;
+
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -651,7 +673,7 @@ public class Client extends WSClient {
         System.out.println("deletecustomer\nqueryflight\nquerycar\nqueryroom\nquerycustomer");
         System.out.println("queryflightprice\nquerycarprice\nqueryroomprice");
         System.out.println("reserveflight\nreservecar\nreserveroom\nitinerary");
-        System.out.println("start\ncommit\nabort");
+        System.out.println("start\ncommit\nabort\nshutdown\ncrash");
         System.out.println("quit");
         System.out.println("\ntype help, <commandname> for detailed info (note the use of comma).");
     }
@@ -860,6 +882,20 @@ public class Client extends WSClient {
             System.out.println("\nUsage: ");
             System.out.println("\tabort, <id>");
             break;
+
+            case 26: //shutdown
+            System.out.println("Shutdown the system");
+            System.out.println("Purpose: ");
+            System.out.println("\tShuts the entire system down with all its rms");
+            System.out.println("\nUsage: ");
+            System.out.println("\tshutdown");
+
+            case 27: //crash
+            System.out.println("Crash the specified RM");
+            System.out.println("Purpose: ");
+            System.out.println("\tProvoke the specified RM to crash");
+            System.out.println("\nUsage: ");
+            System.out.println("\tcrash, <rm name (e.g. customer, flight, car, room, mw)>");
 
             default:
             System.out.println(command);

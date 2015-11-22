@@ -157,4 +157,12 @@ public interface ResourceManager {
     /* Abort a transaction. */
     @WebMethod
     public boolean abort(int id);
+
+    /* Crash a RM. */
+    @WebMethod
+    public boolean crash(String rm);
+
+    /* Crash method for RMs. */
+    @WebMethod
+    public boolean selfDestruct();
 }

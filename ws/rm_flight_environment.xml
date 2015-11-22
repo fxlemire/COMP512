@@ -1,0 +1,5 @@
+<env-entry>
+	<env-entry-name>name</env-entry-name>
+	<env-entry-value>rm_flight</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>

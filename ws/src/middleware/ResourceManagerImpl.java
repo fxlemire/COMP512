@@ -169,6 +169,48 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		return result;
 	}
 
+	public boolean crash(String rm) {
+		boolean result;
+
+		String rmLC = rm.toLowerCase();
+
+		switch (rmLC) {
+		case "customer": {
+			ResourceManager proxy = customerProxies.checkOut();
+			result = proxy.selfDestruct();
+			customerProxies.checkIn(proxy);
+			break;
+		}
+		case "flight": {
+			ResourceManager proxy = flightProxies.checkOut();
+			result = proxy.selfDestruct();
+			flightProxies.checkIn(proxy);
+			break;
+		}
+		case "car": {
+			ResourceManager proxy = carProxies.checkOut();
+			result = proxy.selfDestruct();
+			carProxies.checkIn(proxy);
+			break;
+		}
+		case "room": {
+			ResourceManager proxy = roomProxies.checkOut();
+			result = proxy.selfDestruct();
+			roomProxies.checkIn(proxy);
+			break;
+		}
+		case "mw": {
+			result = selfDestruct();
+			break;
+		}
+		default:
+			System.out.println("Error: No such RM: " + rm);
+			result = false;
+		}
+
+		return result;
+	}
+
 	public boolean commit(int id) {
 		Trace.info("Started 2PC for " + id);
 		
@@ -782,5 +824,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		bill.add(bill.size(), "Total: $" + total);
 
 		return bill;
+	}
+
+	public boolean selfDestruct() {
+		Timer end = new Timer();
+		end.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				System.exit(-1);
+			}
+		}, 1000);
+		return true;
 	}
 }

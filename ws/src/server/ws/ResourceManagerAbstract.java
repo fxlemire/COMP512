@@ -18,6 +18,11 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
         return false;
     }
 
+    public boolean selfDestruct() {
+        Util.System.shutInstance(-1);
+        return true;
+    }
+
     public int start() {
         printNotImplemented("START");
         return -1;

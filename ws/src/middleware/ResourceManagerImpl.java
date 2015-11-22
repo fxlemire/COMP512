@@ -825,14 +825,5 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return bill;
 	}
 
-	public boolean selfDestruct() {
-		Timer end = new Timer();
-		end.schedule(new TimerTask() {
-			@Override
-			public void run() {
-				System.exit(-1);
-			}
-		}, 1000);
-		return true;
-	}
+
 }

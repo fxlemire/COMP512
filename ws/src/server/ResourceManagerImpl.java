@@ -555,14 +555,9 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         }
         return true;
 	}
-
-    public boolean selfDestruct() {
-        shutInstance(-1);
-        return true;
-    }
 	
 	public boolean shutdown() {
-		shutInstance(0);
+		Util.System.shutInstance(0);
 		return true;
 	}
 
@@ -575,15 +570,5 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
         operations.addLast(new ClientOperation(key, value, operationType));
         _temporaryOperations.put(id, operations);
-    }
-
-    private void shutInstance(int status) {
-        Timer end = new Timer();
-        end.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                System.exit(status);
-            }
-        }, 1000);
     }
 }

@@ -184,16 +184,23 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
             _temporaryOperations.remove(id);
             
-            Trace.info("Commit confirmed for " + id);
+            //TODO We might crash in the middle of writing this, which would be problematic.
+            try {
+            	FileOutputStream fos = new FileOutputStream(thisRmName + "." + id + ".master");
+            	fos.getChannel().truncate(0);
+            	ObjectOutputStream oos = new ObjectOutputStream(fos);
+            	oos.writeObject(m_itemHT);
+            	oos.flush();
+            	oos.close();
+            	
+            	Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
+            
         }
         
-        try {
-			Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
-		} catch (IOException e) {
-			//Technically this isn't really problematic.
-			e.printStackTrace();
-		}
-        
+		Trace.info("Commit confirmed for " + id);
         return true;
     }
     

@@ -170,40 +170,81 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	public boolean commit(int id) {
+		Trace.info("Started 2PC for " + id);
+		
 		boolean result;
 		boolean[] rmsUsed = _transactionManager.getRMsUsed(id);
 
-		if (rmsUsed == null) {
-			result = false;
+		boolean decision = vote(id, rmsUsed);
+		Trace.info("Decision for " + id + ": " + decision);
+		
+		if (!decision) {
+			result = abort(id);
 		} else {
-			ResourceManager proxy;
-			if (rmsUsed[TransactionManager.CUSTOMER]) {
-				proxy = customerProxies.checkOut();
-				proxy.commit(id);
-				customerProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.FLIGHT]) {
-				proxy = flightProxies.checkOut();
-				proxy.commit(id);
-				flightProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.CAR]) {
-				proxy = carProxies.checkOut();
-				proxy.commit(id);
-				carProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.ROOM]) {
-				proxy = roomProxies.checkOut();
-				proxy.commit(id);
-				roomProxies.checkIn(proxy);
-			}
-	
+			commitForReal(id, rmsUsed);
 			result = _transactionManager.commit(id, _lockManager);
 		}
+		
+		Trace.info("Finished 2PC for " + id);
+		return result;
+	}
 	
+	private void commitForReal(int id, boolean[] rmsUsed) {
+		
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			proxy.commit(id);
+			customerProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			proxy.commit(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			proxy.commit(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			proxy.commit(id);
+			roomProxies.checkIn(proxy);
+		}
+	}
+	
+	private boolean vote(int id, boolean[] rmsUsed) {
+		boolean result = true;
+		
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			result = result && proxy.prepare(id);
+			customerProxies.checkIn(proxy);
+		}
+
+		if (result && rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			result = result && proxy.prepare(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (result && rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			result = result && proxy.prepare(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (result && rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			result = result && proxy.prepare(id);
+			roomProxies.checkIn(proxy);
+		}
+		
 		return result;
 	}
 
@@ -672,6 +713,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		boolean result = proxy.checkCustomerExistence(id, customerId);
 		customerProxies.checkIn(proxy);
 		return result;
+	}
+	
+	public boolean prepare(int id) {
+		throw new RuntimeException("Middleware does not prepare transactions.");
 	}
 	
 	public boolean shutdown() {

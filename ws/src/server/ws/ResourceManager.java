@@ -157,4 +157,8 @@ public interface ResourceManager {
     /* Abort a transaction. */
     @WebMethod
     public boolean abort(int id);
+    
+    /* Prepare a transaction to be committed (vote phase) */
+    @WebMethod
+    public boolean prepare(int id);
 }

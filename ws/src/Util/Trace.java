@@ -29,50 +29,56 @@ public class Trace {
         java.lang.System.err.println(getThreadID() + " ERROR: " + msg);
     }
 
-    public static boolean persist(String filename, List<Object> objects, boolean append) {
+    public static boolean persist(String filename, String sentence, boolean append) {
         boolean isPersisted = true;
 
         try {
-            File file = new File(filename);
-
-            if (!file.exists()) {
-                if (filename.contains("/")) {
-                    ArrayList<String> splitFileName = new ArrayList<>(Arrays.asList(filename.split("/")));
-                    splitFileName.remove(splitFileName.size() - 1);
-                    String dir;
-
-                    if (splitFileName.size() > 1) {
-                        StringJoiner sj = new StringJoiner("/");
-                        splitFileName.forEach(sj::add);
-                        dir = sj.toString();
-                    } else {
-                        dir = splitFileName.get(0);
-                    }
-
-                    File directory = new File(dir);
-                    directory.mkdirs();
-                }
-
-                file.createNewFile();
-            }
-
-            FileOutputStream fos = new FileOutputStream(file, append);
-            if (!append) {
-                fos.getChannel().truncate(0);
-            }
-
-            ObjectOutputStream next_oos = new ObjectOutputStream(fos);
-            Iterator it = objects.iterator();
-            while (it.hasNext()) {
-                next_oos.writeObject(it.next());
-            }
-            next_oos.close();
+            ObjectOutputStream oos = getOutputStream(filename, append);
+            oos.writeChars(sentence);
+            oos.close();
         } catch (IOException e) {
             Trace.error(e.toString());
             isPersisted = false;
         }
 
         return isPersisted;
+    }
+
+    public static boolean persist(String filename, List<Object> objects, boolean append) {
+        boolean isPersisted = true;
+
+        try {
+            ObjectOutputStream oos = getOutputStream(filename, append);
+            Iterator it = objects.iterator();
+            while (it.hasNext()) {
+                oos.writeObject(it.next());
+            }
+            oos.close();
+        } catch (IOException e) {
+            Trace.error(e.toString());
+            isPersisted = false;
+        }
+
+        return isPersisted;
+    }
+
+    private static ObjectOutputStream getOutputStream(String filename, boolean append) {
+        File file = System.createFile(filename);
+        ObjectOutputStream oos = null;
+
+        if (file != null) {
+            try {
+                FileOutputStream fos = new FileOutputStream(file, append);
+                if (!append) {
+                    fos.getChannel().truncate(0);
+                }
+                oos = new ObjectOutputStream(fos);
+            } catch (IOException e) {
+                Trace.error(e.toString());
+            }
+        }
+
+        return oos;
     }
 
     private static String getThreadID() {

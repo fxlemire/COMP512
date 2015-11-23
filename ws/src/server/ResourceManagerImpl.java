@@ -111,7 +111,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
-            Trace.info("Vote for " + id + ": " + true);
+            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + true, true);
             return true;
         }
 
@@ -147,7 +147,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         }
         
     	// This trace will need to occur AFTER we wrote the data to disk
-    	Trace.info("Vote for " + id + ": " + result);
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + result, true);
     	return result;
     }
 
@@ -157,7 +157,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
-                Trace.info("Commit confirmed for " + id);
+                Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
                 return true;
             }
 
@@ -179,8 +179,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             }
 
             _temporaryOperations.remove(id);
-            
-            Trace.info("Commit confirmed for " + id);
+
+            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
         }
         
         try {

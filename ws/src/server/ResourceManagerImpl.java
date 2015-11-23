@@ -180,16 +180,19 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
             _temporaryOperations.remove(id);
 
-            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
+            List<Object> objects = new ArrayList<>();
+            objects.add(m_itemHT);
+
+            Trace.persist("data/" + thisRmName + "." + id + ".master", objects, true);
+
+            try {
+                Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));
+    		} catch (IOException e) {
+    			e.printStackTrace();
+    		}
         }
-        
-        try {
-			Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));
-		} catch (IOException e) {
-			//Technically this isn't really problematic.
-			e.printStackTrace();
-		}
-        
+
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
         return true;
     }
     

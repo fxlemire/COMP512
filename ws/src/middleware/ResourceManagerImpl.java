@@ -5,6 +5,7 @@
 
 package middleware;
 
+import Util.Trace;
 import middleware.LockManager.LockManager;
 import server.*;
 
@@ -213,13 +214,13 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 
 	public boolean commit(int id) {
-		Trace.info("Started 2PC for " + id);
+		Trace.persist("logs/2PC_mw.log", "[2PC][mw] start " + id, true);
 		
 		boolean result;
 		boolean[] rmsUsed = _transactionManager.getRMsUsed(id);
 
 		boolean decision = vote(id, rmsUsed);
-		Trace.info("Decision for " + id + ": " + decision);
+		Trace.persist("logs/2PC_mw.log", "[2PC][mw] result " + id + " " + decision, true);
 		
 		if (!decision) {
 			result = abort(id);
@@ -227,8 +228,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			commitForReal(id, rmsUsed);
 			result = _transactionManager.commit(id, _lockManager);
 		}
-		
-		Trace.info("Finished 2PC for " + id);
+
+		Trace.persist("logs/2PC_mw.log", "[2PC][mw] commit " + id, true);
 		return result;
 	}
 	
@@ -824,6 +825,4 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
 		return bill;
 	}
-
-
 }

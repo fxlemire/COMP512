@@ -5,9 +5,9 @@
 
 package server;
 
-import java.io.FileOutputStream;
+import Util.Trace;
+
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -95,6 +95,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			//Technically this isn't really problematic.
 			e.printStackTrace();
 		}
+
+        Trace.info("Abort confirm for " + id);
 		
 		return true;
     }
@@ -109,7 +111,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
-            Trace.info("Commit confirmed for " + id);
+            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + true, true);
             return true;
         }
 
@@ -133,35 +135,29 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
                     break;
             }
         }
-    	
-        try
-        {
-        	ObjectOutputStream next_oos = new ObjectOutputStream(
-											new FileOutputStream(
-												thisRmName + "." + id + ".next"));
-        	next_oos.writeObject(next_write);
-        	next_oos.writeObject(next_remove);
-        	next_oos.close();
-        }
-        catch (IOException e)
-        {
-        	Trace.error(e.toString());
+
+        List<Object> objects = new ArrayList<>();
+        objects.add(next_write);
+        objects.add(next_remove);
+
+        boolean isPersisted = Trace.persist("data/" + thisRmName + "." + id + ".next", objects, false);
+
+        if (!isPersisted) {
         	result = false;
         }
         
     	// This trace will need to occur AFTER we wrote the data to disk
-    	Trace.info("Vote for " + id + ": " + result);
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + result, true);
     	return result;
     }
 
     // Commit a transaction.
     public boolean commit(int id) {
         synchronized(bidon) {
-
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
-                Trace.info("Commit confirmed for " + id);
+                Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
                 return true;
             }
 
@@ -183,24 +179,20 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             }
 
             _temporaryOperations.remove(id);
-            
-            //TODO We might crash in the middle of writing this, which would be problematic.
+
+            List<Object> objects = new ArrayList<>();
+            objects.add(m_itemHT);
+
+            Trace.persist("data/" + thisRmName + "." + id + ".master", objects, true);
+
             try {
-            	FileOutputStream fos = new FileOutputStream(thisRmName + "." + id + ".master");
-            	fos.getChannel().truncate(0);
-            	ObjectOutputStream oos = new ObjectOutputStream(fos);
-            	oos.writeObject(m_itemHT);
-            	oos.flush();
-            	oos.close();
-            	
-            	Files.deleteIfExists(Paths.get(thisRmName + "." + id + ".next"));
+                Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));
     		} catch (IOException e) {
     			e.printStackTrace();
     		}
-            
         }
-        
-		Trace.info("Commit confirmed for " + id);
+
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
         return true;
     }
     

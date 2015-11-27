@@ -3,6 +3,7 @@ package middleware;
 import Util.TTL;
 import middleware.LockManager.LockManager;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class TransactionManager {
@@ -11,7 +12,6 @@ public class TransactionManager {
     public final static int CAR = 2;
     public final static int ROOM = 3;
 
-    private final Object _bidon = new Object();
     private HashMap<Integer, boolean[]> _currentTransactions = new HashMap<Integer, boolean[]>();
     private HashMap<Integer, TTL> _ttls = new HashMap<Integer, TTL>();
     private int _transactionId = 0;
@@ -29,13 +29,11 @@ public class TransactionManager {
         return tm;
     }
 
-    public int start(ResourceManagerImpl rm) {
-        synchronized(_bidon) {
-            int transactionId = _transactionId++;
-            _currentTransactions.put(transactionId, new boolean[4]);
-            _ttls.put(transactionId, new TTL(transactionId, rm, TIME_TO_LIVE));
-            return transactionId;
-        }
+    public synchronized int start(ResourceManagerImpl rm) {
+        int transactionId = _transactionId++;
+        _currentTransactions.put(transactionId, new boolean[4]);
+        _ttls.put(transactionId, new TTL(transactionId, rm, TIME_TO_LIVE));
+        return transactionId;
     }
 
     public boolean commit(int id, LockManager lockManager) {
@@ -46,7 +44,7 @@ public class TransactionManager {
         return unlockId(id, lockManager);
     }
 
-    public boolean hasValidId(int id) {
+    public synchronized boolean hasValidId(int id) {
         boolean isValid = id < _transactionId && _currentTransactions.containsKey(id);
         if (isValid) {
             TTL ttl = _ttls.get(id);
@@ -57,7 +55,7 @@ public class TransactionManager {
         return isValid;
     }
 
-    public boolean addTransactionRM(int id, int rm) {
+    public synchronized boolean addTransactionRM(int id, int rm) {
         boolean isUpdated = false;
         boolean[] rmsUsed = _currentTransactions.get(id);
 
@@ -70,24 +68,23 @@ public class TransactionManager {
         return isUpdated;
     }
 
-    public boolean[] getRMsUsed(int id) {
-        return _currentTransactions.get(id);
+    public synchronized boolean[] getRMsUsed(int id) {
+    	// Return a copy to prevent modifications from outside the synchronized block
+        return Arrays.copyOf(_currentTransactions.get(id), 4);
     }
 
-    private boolean unlockId(int id, LockManager lockManager) {
-        synchronized(_bidon) {
-            boolean isUnlocked = lockManager.UnlockAll(id);
+    private synchronized boolean unlockId(int id, LockManager lockManager) {
+        boolean isUnlocked = lockManager.UnlockAll(id);
 
-            if (isUnlocked) {
-                TTL ttl = _ttls.get(id);
-                if (ttl != null) {
-                    ttl.kill();
-                    _ttls.remove(id);
-                }
-                _currentTransactions.remove(id);
+        if (isUnlocked) {
+            TTL ttl = _ttls.get(id);
+            if (ttl != null) {
+                ttl.kill();
+                _ttls.remove(id);
             }
-
-            return isUnlocked;
+            _currentTransactions.remove(id);
         }
+
+        return isUnlocked;
     }
 }

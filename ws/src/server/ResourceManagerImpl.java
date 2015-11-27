@@ -197,7 +197,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             List<Object> objects = new ArrayList<>();
             objects.add(m_itemHT);
 
-            Trace.persist("data/" + thisRmName + "." + id + ".master", objects, true);
+            Trace.persist("data/" + thisRmName + "." + id + ".master", objects, false);
 
             try {
                 Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));

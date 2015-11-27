@@ -676,6 +676,9 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
         operations.addLast(new ClientOperation(key, value, operationType));
         _temporaryOperations.put(id, operations);
+        
+        // This log is so that we know if we lost data during a crash.
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " operation " + id, true);
     }
 
     private void killTTL(int id) {

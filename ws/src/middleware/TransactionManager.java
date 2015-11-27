@@ -1,5 +1,6 @@
 package middleware;
 
+import Util.TTL;
 import middleware.LockManager.LockManager;
 
 import java.util.HashMap;
@@ -16,6 +17,7 @@ public class TransactionManager {
     private int _transactionId = 0;
     private static boolean _isInstantiated = false;
     private static TransactionManager tm = null;
+    private static final int TIME_TO_LIVE = 60;
 
     private TransactionManager() { }
 
@@ -31,7 +33,7 @@ public class TransactionManager {
         synchronized(_bidon) {
             int transactionId = _transactionId++;
             _currentTransactions.put(transactionId, new boolean[4]);
-            _ttls.put(transactionId, new TTL(transactionId, rm, 60));
+            _ttls.put(transactionId, new TTL(transactionId, rm, TIME_TO_LIVE));
             return transactionId;
         }
     }

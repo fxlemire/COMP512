@@ -6,6 +6,7 @@
 package server;
 
 import Util.Trace;
+import Util.TTL;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +22,9 @@ import javax.naming.NamingException;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="rm_handler.xml")
 public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
+    private Hashtable<Integer, TTL> _ttls = new Hashtable<>();
+
+    private final int TIME_TO_LIVE = 120;
 
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
@@ -48,6 +52,11 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
      */
     private RMItem readData(int id, String key) {
         synchronized(bidon) {
+            TTL ttl = _ttls.get(id);
+            if (ttl != null) {
+                ttl.restart();
+            }
+
             RMItem item = null;
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
@@ -86,6 +95,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     // Abort a transaction.
     public boolean abort(int id) {
         synchronized(bidon) {
+            killTTL(id);
             _temporaryOperations.remove(id);
         }
         
@@ -112,6 +122,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
         if (operations == null) {
             Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + true, true);
+            cancelTTL(id);
             return true;
         }
 
@@ -148,12 +159,15 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         
     	// This trace will need to occur AFTER we wrote the data to disk
         Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + result, true);
+
+        if (result) cancelTTL(id);
     	return result;
     }
 
     // Commit a transaction.
     public boolean commit(int id) {
         synchronized(bidon) {
+            killTTL(id);
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
@@ -646,6 +660,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 
     private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
+        TTL ttl = _ttls.get(id);
+        if (ttl == null) {
+            ttl = new TTL(id, this, TIME_TO_LIVE);
+            _ttls.put(id, ttl);
+        } else {
+            ttl.restart();
+        }
+
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
@@ -654,5 +676,17 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
         operations.addLast(new ClientOperation(key, value, operationType));
         _temporaryOperations.put(id, operations);
+    }
+
+    private void killTTL(int id) {
+        cancelTTL(id);
+        _ttls.remove(id);
+    }
+
+    private void cancelTTL(int id) {
+        TTL ttl = _ttls.get(id);
+        if (ttl != null) {
+            ttl.kill();
+        }
     }
 }

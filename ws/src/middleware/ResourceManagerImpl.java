@@ -83,7 +83,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		if (rmsUsed == null) {
 			result = false;
 		} else {
-
 			ResourceManager proxy;
 			if (rmsUsed[TransactionManager.CUSTOMER]) {
 				proxy = customerProxies.checkOut();
@@ -111,8 +110,9 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			
 			result = _transactionManager.abort(id, _lockManager);
 		}
-		
-		
+
+		Trace.persist("logs/2PC_mw.log", "[2PC][mw] end " + id, true);
+
 		return result;
 	}
 	
@@ -229,7 +229,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			result = _transactionManager.commit(id, _lockManager);
 		}
 
-		Trace.persist("logs/2PC_mw.log", "[2PC][mw] commit " + id, true);
+		Trace.persist("logs/2PC_mw.log", "[2PC][mw] end " + id, true);
 		return result;
 	}
 	

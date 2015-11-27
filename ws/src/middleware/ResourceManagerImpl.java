@@ -106,33 +106,37 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		HashMap<Integer, Object> incomplete = new HashMap<Integer, Object>();
 		
 		// TODO This parsing code could be more robust
-		
-		String line;
-		while((line = logFile.readLine()) != null) {
-			line = line.replace("[2PC] [MW] ", "");
-			String[] entry = line.split(" ");
-			int id = Integer.parseInt(entry[1]);
-			String op = entry[0];
-			
-			switch(op) {
-			case "start":
-				incomplete.put(id, UNKNOWN_TXN_RESULT);
-				break;
-			case "result":
-				boolean result = Boolean.parseBoolean(entry[2]);
-				incomplete.put(id, result);
-				break;
-			case "end":
-				incomplete.remove(id);
-				break;
-			default:
-				throw new RuntimeException("THIS WAS UNEXPECTED! :)");
+
+		try {
+			String line;
+			while ((line = logFile.readLine()) != null) {
+				line = line.replace("[2PC] [MW] ", "");
+				String[] entry = line.split(" ");
+				int id = Integer.parseInt(entry[1]);
+				String op = entry[0];
+
+				switch (op) {
+					case "start":
+						incomplete.put(id, UNKNOWN_TXN_RESULT);
+						break;
+					case "result":
+						boolean result = Boolean.parseBoolean(entry[2]);
+						incomplete.put(id, result);
+						break;
+					case "end":
+						incomplete.remove(id);
+						break;
+					default:
+						throw new RuntimeException("THIS WAS UNEXPECTED! :)");
+				}
 			}
+
+			// Get rid of the old log file, we don't need it anymore
+			logFile.close();
+			Files.delete(Paths.get("logs/2pc_mw.log"));
+		} catch (Exception e) {
+			// do nothing
 		}
-		
-		// Get rid of the old log file, we don't need it anymore
-		logFile.close();
-		Files.delete(Paths.get("logs/2pc_mw.log"));
 		
 		// Note: here we potentially tell some RMs about things they have no idea of
 		// (i.e. tell them to abort a transaction they don't participate in). That's okay,

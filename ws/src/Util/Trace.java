@@ -8,10 +8,7 @@ package Util;
 // A simple wrapper around System.out.println, allows us to disable some of
 // the verbose output from RM, TM, and WC if we want.
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.lang.*;
 import java.util.*;
 
@@ -30,18 +27,10 @@ public class Trace {
     }
 
     public static boolean persist(String filename, String sentence, boolean append) {
-        boolean isPersisted = true;
-
-        try {
-            ObjectOutputStream oos = getOutputStream(filename, append);
-            oos.writeChars(sentence);
-            oos.close();
-        } catch (IOException e) {
-            Trace.error(e.toString());
-            isPersisted = false;
-        }
-
-        return isPersisted;
+        PrintStream ps = new PrintStream(getFileOutputStream(filename, append));
+        ps.println(sentence);
+        ps.close();
+        return true;
     }
 
     public static boolean persist(String filename, List<Object> objects, boolean append) {
@@ -63,22 +52,33 @@ public class Trace {
     }
 
     private static ObjectOutputStream getOutputStream(String filename, boolean append) {
-        File file = System.createFile(filename);
         ObjectOutputStream oos = null;
+
+        try {
+            oos = new ObjectOutputStream(getFileOutputStream(filename, append));
+        } catch (IOException e) {
+            Trace.error(e.toString());
+        }
+
+        return oos;
+    }
+
+    private static FileOutputStream getFileOutputStream(String filename, boolean append) {
+        File file = System.createFile(filename);
+        FileOutputStream fos = null;
 
         if (file != null) {
             try {
-                FileOutputStream fos = new FileOutputStream(file, append);
+                fos = new FileOutputStream(file, append);
                 if (!append) {
                     fos.getChannel().truncate(0);
                 }
-                oos = new ObjectOutputStream(fos);
             } catch (IOException e) {
                 Trace.error(e.toString());
             }
         }
 
-        return oos;
+        return fos;
     }
 
     private static String getThreadID() {

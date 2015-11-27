@@ -86,3 +86,6 @@ local.properties
 **/*.csv
 # log
 **/*.log
+# data
+**/*.next
+**/*.master

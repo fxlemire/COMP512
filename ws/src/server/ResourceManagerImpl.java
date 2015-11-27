@@ -96,7 +96,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			e.printStackTrace();
 		}
 
-        Trace.info("Abort confirm for " + id);
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
 		
 		return true;
     }
@@ -157,7 +157,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
-                Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
+                Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
                 return true;
             }
 
@@ -192,7 +192,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     		}
         }
 
-        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " commit " + id, true);
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
         return true;
     }
     

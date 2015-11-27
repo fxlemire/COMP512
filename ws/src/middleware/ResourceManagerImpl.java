@@ -9,9 +9,16 @@ import Util.Trace;
 import middleware.LockManager.LockManager;
 import server.*;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
+import javax.annotation.PostConstruct;
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
 import javax.naming.Context;
@@ -22,6 +29,8 @@ import javax.naming.NamingException;
 @HandlerChain(file="mw_handler.xml")
 public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	
+	private static final Object UNKNOWN_TXN_RESULT = new Object();
+	
 	private static final int PROXY_POOL_SIZE = 4;
 	
 	private ObjectPool<ResourceManager> flightProxies;
@@ -31,6 +40,37 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
 	private LockManager _lockManager = new LockManager();
 	private TransactionManager _transactionManager = TransactionManager.getInstance();
+	
+	@PostConstruct
+	public void init()
+	{
+		Context env = null;
+		try
+		{
+			env = (Context) new InitialContext().lookup("java:comp/env");
+		} 
+		catch (NamingException e)
+		{
+			throw new RuntimeException(e);
+		}
+	    flightProxies = buildPoolFor("flight", env);
+	    roomProxies = buildPoolFor("room", env);
+	    carProxies = buildPoolFor("car", env);
+	    customerProxies = buildPoolFor("customer", env);
+	    
+	    checkRecover();
+	}
+	
+	private ObjectPool<ResourceManager> buildPoolFor(String rm, Context env)
+	{
+		LinkedList<ResourceManager> proxies = new LinkedList<ResourceManager>();
+		for (int i = 0 ; i < ResourceManagerImpl.PROXY_POOL_SIZE ; i++)
+		{
+			proxies.add(this.getProxyFor(rm, env));
+		}
+		
+		return new ObjectPool<ResourceManager>(proxies);
+	}
 	
 	private ResourceManager getProxyFor(String rm, Context env) 
 	{
@@ -48,32 +88,82 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		}
 	}
 	
-	private ObjectPool<ResourceManager> buildPoolFor(String rm, Context env)
+	private void checkRecover()
 	{
-		LinkedList<ResourceManager> proxies = new LinkedList<ResourceManager>();
-		for (int i = 0 ; i < ResourceManagerImpl.PROXY_POOL_SIZE ; i++)
-		{
-			proxies.add(this.getProxyFor(rm, env));
-		}
-		
-		return new ObjectPool<ResourceManager>(proxies);
-	}
-	
-	public ResourceManagerImpl()
-	{
-		Context env = null;
+		BufferedReader logFile;
 		try
 		{
-			env = (Context) new InitialContext().lookup("java:comp/env");
-		} 
-		catch (NamingException e)
-		{
-			throw new RuntimeException(e);
+			// TODO unhardcode
+			logFile = new BufferedReader(new FileReader("logs/2PC_mw.log"));
 		}
-	    flightProxies = buildPoolFor("flight", env);
-	    roomProxies = buildPoolFor("room", env);
-	    carProxies = buildPoolFor("car", env);
-	    customerProxies = buildPoolFor("customer", env);
+		catch (FileNotFoundException e)
+		{
+			Trace.info("No 2PC log found...");
+			// File doesn't exist, we don't have to go further.
+			return;
+		}
+		
+		// Records incomplete transactions, with their results (unknown, true [commit], false [abort])
+		HashMap<Integer, Object> incomplete = new HashMap<Integer, Object>();
+		
+		// TODO This parsing code could be more robust
+
+		try {
+			String line;
+			while ((line = logFile.readLine()) != null) {
+				line = line.replace("[2PC][mw] ", "");
+				String[] entry = line.split(" ");
+				int id = Integer.parseInt(entry[1]);
+				String op = entry[0];
+
+				switch (op) {
+					case "start":
+						incomplete.put(id, UNKNOWN_TXN_RESULT);
+						break;
+					case "result":
+						boolean result = Boolean.parseBoolean(entry[2]);
+						incomplete.put(id, result);
+						break;
+					case "end":
+						incomplete.remove(id);
+						break;
+					default:
+						Trace.warn("Unknown log entry " + line);
+						break;
+				}
+			}
+
+			// Get rid of the old log file, we don't need it anymore
+			logFile.close();
+			Files.delete(Paths.get("logs/2PC_mw.log"));
+		} catch (Exception e) {
+			// do nothing
+		}
+		
+		// Note: here we potentially tell some RMs about things they have no idea of
+		// (i.e. tell them to abort a transaction they don't participate in). That's okay,
+		// they know how to deal with that.
+		final boolean[] allRMs = new boolean[] {true, true, true, true};
+		for(Map.Entry<Integer, Object> e: incomplete.entrySet()) {
+			int id = e.getKey();
+			if (e.getValue() == UNKNOWN_TXN_RESULT) {
+				// If we don't know what happened, then we don't really
+				// have a choice but to abort.
+				Trace.info("Found transaction " + id + " without a vote result. Aborting...");
+				abortForSpecific(id, allRMs);
+			} else {
+				// Otherwise, re-send the decision.
+				boolean result = (Boolean) e.getValue();
+				Trace.info("Found incomplete transaction " + id + ". Resending result of " + result);
+				if (result)
+					commitForSpecific(id, allRMs);
+				else
+					abortForSpecific(id, allRMs);
+			}
+		}
+		
+		// At this point, none of the RMs should have any pending transactions, so it's okay to
+		// start fresh
 	}
 
 	public boolean abort(int id) {
@@ -83,30 +173,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		if (rmsUsed == null) {
 			result = false;
 		} else {
-			ResourceManager proxy;
-			if (rmsUsed[TransactionManager.CUSTOMER]) {
-				proxy = customerProxies.checkOut();
-				proxy.abort(id);
-				customerProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.FLIGHT]) {
-				proxy = flightProxies.checkOut();
-				proxy.abort(id);
-				flightProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.CAR]) {
-				proxy = carProxies.checkOut();
-				proxy.abort(id);
-				carProxies.checkIn(proxy);
-			}
-	
-			if (rmsUsed[TransactionManager.ROOM]) {
-				proxy = roomProxies.checkOut();
-				proxy.abort(id);
-				roomProxies.checkIn(proxy);
-			}
+			abortForSpecific(id, rmsUsed);
 			
 			result = _transactionManager.abort(id, _lockManager);
 		}
@@ -116,60 +183,33 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return result;
 	}
 	
-	public boolean addCars(int id, String location, int numCars, int carPrice) {
-		
-		boolean result;
-		try {
-			_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
-		} catch (Exception e) {
-			abort(id);
-			result = false;
+	private void abortForSpecific(int id, boolean[] rmsUsed) {
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			proxy.abort(id);
+			customerProxies.checkIn(proxy);
 		}
-		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
 
-		ResourceManager proxy = carProxies.checkOut();
-		result = proxy.addCars(id, location, numCars, carPrice);
-		carProxies.checkIn(proxy);
-		
-		return result;
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			proxy.abort(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			proxy.abort(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			proxy.abort(id);
+			roomProxies.checkIn(proxy);
+		}
 	}
-
-	public boolean addFlight(int id, int flightNumber, int numSeats,
-			int flightPrice) {
-		boolean result;
-		
-		try {
-			_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
-		} catch (Exception e) {
-			abort(id);
-			return false;
-		}
-		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
-
-		ResourceManager proxy = flightProxies.checkOut();
-		result = proxy.addFlight(id, flightNumber, numSeats, flightPrice);
-		flightProxies.checkIn(proxy);
 	
-		return result;
-	}
-
-	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-		boolean result; 
-		try {
-			_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
-		} catch (Exception e) {
-			abort(id);
-			return false;
-		}
-		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
-
-		ResourceManager proxy = roomProxies.checkOut();
-		result = proxy.addRooms(id, location, numRooms, roomPrice);
-		roomProxies.checkIn(proxy);
-	
-		return result;
-	}
-
 	@Override
 	public boolean crash(String rm) {
 		boolean result;
@@ -225,7 +265,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		if (!decision) {
 			result = abort(id);
 		} else {
-			commitForReal(id, rmsUsed);
+			commitForSpecific(id, rmsUsed);
 			result = _transactionManager.commit(id, _lockManager);
 		}
 
@@ -233,7 +273,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return result;
 	}
 	
-	private void commitForReal(int id, boolean[] rmsUsed) {
+	private void commitForSpecific(int id, boolean[] rmsUsed) {
 		
 		ResourceManager proxy;
 		if (rmsUsed[TransactionManager.CUSTOMER]) {
@@ -289,6 +329,60 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			roomProxies.checkIn(proxy);
 		}
 		
+		return result;
+	}
+	
+	public boolean addCars(int id, String location, int numCars, int carPrice) {
+		
+		boolean result;
+		try {
+			_lockManager.Lock(id, Car.getKey(location), LockManager.WRITE);
+		} catch (Exception e) {
+			abort(id);
+			result = false;
+		}
+		_transactionManager.addTransactionRM(id, TransactionManager.CAR);
+
+		ResourceManager proxy = carProxies.checkOut();
+		result = proxy.addCars(id, location, numCars, carPrice);
+		carProxies.checkIn(proxy);
+		
+		return result;
+	}
+
+	public boolean addFlight(int id, int flightNumber, int numSeats,
+			int flightPrice) {
+		boolean result;
+		
+		try {
+			_lockManager.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+		} catch (Exception e) {
+			abort(id);
+			return false;
+		}
+		_transactionManager.addTransactionRM(id, TransactionManager.FLIGHT);
+
+		ResourceManager proxy = flightProxies.checkOut();
+		result = proxy.addFlight(id, flightNumber, numSeats, flightPrice);
+		flightProxies.checkIn(proxy);
+	
+		return result;
+	}
+
+	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+		boolean result; 
+		try {
+			_lockManager.Lock(id, Room.getKey(location), LockManager.WRITE);
+		} catch (Exception e) {
+			abort(id);
+			return false;
+		}
+		_transactionManager.addTransactionRM(id, TransactionManager.ROOM);
+
+		ResourceManager proxy = roomProxies.checkOut();
+		result = proxy.addRooms(id, location, numRooms, roomPrice);
+		roomProxies.checkIn(proxy);
+	
 		return result;
 	}
 

@@ -662,6 +662,7 @@ public class Client extends WSClient {
                         System.out.println(server + " server has been successfully set to die at moment " + when + ".");
                     } else {
                         System.out.println(server + " server's survival instinct prevented us from convincing him to die. Long live the " + server + " server!");
+                        System.out.println("(Or you used the command in the wrong way... or it's been already used once... resetdie first, then setdie again!");
                     }
                 } catch (Exception e) {
                     printErrorMessage(e);

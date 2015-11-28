@@ -40,6 +40,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	private LockManager _lockManager = new LockManager();
 	private TransactionManager _transactionManager = TransactionManager.getInstance();
 
+	private boolean _isSetDie_used = false;
 	private boolean _isSetDie_beforevote = false;
 	private boolean _isSetDie_aftervote_some = false;
 	private boolean _isSetDie_beforedecide = false;
@@ -880,44 +881,51 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	public boolean setDie(String server, String when) {
 		boolean isSetToDie = true;
 
-		if (server.equals("mw")) {
-			switch (when) {
-			case "beforevote":
-				_isSetDie_beforevote = true;
-				break;
-			case "aftervote_some":
-				_isSetDie_aftervote_some = true;
-				break;
-			case "beforedecide":
-				_isSetDie_beforedecide = true;
-				break;
-			case "afterdecide_none":
-				_isSetDie_afterdecide_none = true;
-				break;
-			case "afterdecide_some":
-				_isSetDie_afterdecide_some = true;
-				break;
-			case "afterdecide_all":
-				_isSetDie_afterdecide_all = true;
-				break;
-			default:
-				Trace.info("Invalid moment for a setDie");
-				isSetToDie = false;
+		if (!_isSetDie_used) {
+			_isSetDie_used = true;
+
+			if (server.equals("mw")) {
+				switch (when) {
+					case "beforevote":
+						_isSetDie_beforevote = true;
+						break;
+					case "aftervote_some":
+						_isSetDie_aftervote_some = true;
+						break;
+					case "beforedecide":
+						_isSetDie_beforedecide = true;
+						break;
+					case "afterdecide_none":
+						_isSetDie_afterdecide_none = true;
+						break;
+					case "afterdecide_some":
+						_isSetDie_afterdecide_some = true;
+						break;
+					case "afterdecide_all":
+						_isSetDie_afterdecide_all = true;
+						break;
+					default:
+						Trace.info("Invalid moment for a setDie");
+						isSetToDie = false;
+				}
+			} else {
+				if (when.equals("aftervote")) {
+					_isSetDie_rm = server;
+					_isSetDie_rm_aftervote = true;
+				} else {
+					final boolean[] result = {true};
+					executeOnRm(server, new ProxyRunnable() {
+						@Override
+						public void run(ResourceManager proxy) {
+							result[0] = result[0] && proxy.setDie(server, when);
+						}
+					});
+					isSetToDie = result[0];
+				}
 			}
 		} else {
-			if (when.equals("aftervote")) {
-				_isSetDie_rm = server;
-				_isSetDie_rm_aftervote = true;
-			} else {
-				final boolean[] result = {true};
-				executeOnRm(server, new ProxyRunnable() {
-					@Override
-					public void run(ResourceManager proxy) {
-						result[0] = result[0] && proxy.setDie(server, when);
-					}
-				});
-				isSetToDie = result[0];
-			}
+			Trace.info("Cannot use setDie more than once");
+			isSetToDie = false;
 		}
 
 		return isSetToDie;
@@ -926,23 +934,26 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	public boolean resetDie() {
 		boolean[] result = {true};
 
-		_isSetDie_beforevote = false;
-		_isSetDie_aftervote_some = false;
-		_isSetDie_beforedecide = false;
-		_isSetDie_afterdecide_none = false;
-		_isSetDie_afterdecide_some = false;
-		_isSetDie_afterdecide_all = false;
-		_isSetDie_rm = null;
-		_isSetDie_rm_aftervote = false;
+		if (_isSetDie_used) {
+			_isSetDie_used = false;
+			_isSetDie_beforevote = false;
+			_isSetDie_aftervote_some = false;
+			_isSetDie_beforedecide = false;
+			_isSetDie_afterdecide_none = false;
+			_isSetDie_afterdecide_some = false;
+			_isSetDie_afterdecide_all = false;
+			_isSetDie_rm = null;
+			_isSetDie_rm_aftervote = false;
 
-		boolean[] allRms = {true, true, true, true};
+			boolean[] allRms = {true, true, true, true};
 
-		processRmsUsed(allRms, new ProxyRunnable() {
-			@Override
-			public void run(ResourceManager proxy) {
-				result[0] = result[0] && proxy.resetDie();
-			}
-		});
+			processRmsUsed(allRms, new ProxyRunnable() {
+				@Override
+				public void run(ResourceManager proxy) {
+					result[0] = result[0] && proxy.resetDie();
+				}
+			});
+		}
 
 		return result[0];
 	}

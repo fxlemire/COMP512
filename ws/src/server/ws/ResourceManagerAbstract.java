@@ -19,7 +19,7 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
     }
 
     public boolean selfDestruct() {
-        Util.System.shutInstance(-1);
+        System.exit(-1);
         return true;
     }
 
@@ -38,7 +38,8 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
     }
 
     public boolean isStillActive(int id) {
-        return false; //not implemented
+        printNotImplemented("HEARTBEAT (IS STILL ACTIVE)");
+        return false;
     }
 
     private void printNotImplemented(String method) {

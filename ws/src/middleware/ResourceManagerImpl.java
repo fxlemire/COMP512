@@ -39,6 +39,16 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
 	private LockManager _lockManager = new LockManager();
 	private TransactionManager _transactionManager = TransactionManager.getInstance();
+
+	private boolean _isSetDie_used = false;
+	private boolean _isSetDie_beforevote = false;
+	private boolean _isSetDie_aftervote_some = false;
+	private boolean _isSetDie_beforedecide = false;
+	private boolean _isSetDie_afterdecide_none = false;
+	private boolean _isSetDie_afterdecide_some = false;
+	private boolean _isSetDie_afterdecide_all = false;
+	private String _isSetDie_rm;
+	private boolean _isSetDie_rm_aftervote = false;
 	
 	@PostConstruct
 	public void init()
@@ -202,51 +212,29 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			@Override
 			public void run(ResourceManager proxy) {
 				proxy.abort(id);
+				if (_isSetDie_afterdecide_some) {
+					selfDestruct();
+				}
 			}
 		});
 	}
 	
 	@Override
 	public boolean crash(String rm) {
-		boolean result;
+		final boolean[] result = {true};
 
-		String rmLC = rm.toLowerCase();
-
-		switch (rmLC) {
-		case "customer": {
-			ResourceManager proxy = customerProxies.checkOut();
-			result = proxy.selfDestruct();
-			customerProxies.checkIn(proxy);
-			break;
-		}
-		case "flight": {
-			ResourceManager proxy = flightProxies.checkOut();
-			result = proxy.selfDestruct();
-			flightProxies.checkIn(proxy);
-			break;
-		}
-		case "car": {
-			ResourceManager proxy = carProxies.checkOut();
-			result = proxy.selfDestruct();
-			carProxies.checkIn(proxy);
-			break;
-		}
-		case "room": {
-			ResourceManager proxy = roomProxies.checkOut();
-			result = proxy.selfDestruct();
-			roomProxies.checkIn(proxy);
-			break;
-		}
-		case "mw": {
-			result = selfDestruct();
-			break;
-		}
-		default:
-			System.out.println("Error: No such RM: " + rm);
-			result = false;
+		if (rm.equals("mw")) {
+			result[0] = selfDestruct();
+		} else {
+			executeOnRm(rm, new ProxyRunnable() {
+				@Override
+				public void run(ResourceManager proxy) {
+					result[0] = result[0] && proxy.selfDestruct();
+				}
+			});
 		}
 
-		return result;
+		return result[0];
 	}
 
 	public boolean commit(int id) {
@@ -257,6 +245,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
 		boolean decision = vote(id, rmsUsed);
 		Trace.persist("logs/2PC_mw.log", "[2PC][mw] result " + id + " " + decision, true);
+
+		if (_isSetDie_afterdecide_none) {
+			selfDestruct();
+		}
 		
 		if (!decision) {
 			result = abort(id);
@@ -266,6 +258,11 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		}
 
 		Trace.persist("logs/2PC_mw.log", "[2PC][mw] end " + id, true);
+
+		if (_isSetDie_afterdecide_all) {
+			selfDestruct();
+		}
+
 		return result;
 	}
 	
@@ -274,21 +271,44 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			@Override
 			public void run(ResourceManager proxy) {
 				proxy.commit(id);
+				if (_isSetDie_afterdecide_some) {
+					selfDestruct();
+				}
 			}
 		});
 	}
 	
 	private boolean vote(int id, boolean[] rmsUsed) {
+		if (_isSetDie_beforevote) {
+			selfDestruct();
+		}
+
 		final boolean[] result = {true};
 
 		ProxyRunnable runnable = new ProxyRunnable() {
 			@Override
 			public void run(ResourceManager proxy) {
 				result[0] = result[0] && proxy.prepare(id);
+				if (_isSetDie_aftervote_some) {
+					selfDestruct();
+				}
 			}
 		};
 
 		processRmsUsed(rmsUsed, runnable);
+
+		if (_isSetDie_rm_aftervote) {
+			executeOnRm(_isSetDie_rm, new ProxyRunnable() {
+				@Override
+				public void run(ResourceManager proxy) {
+					proxy.selfDestruct();
+				}
+			});
+		}
+
+		if (_isSetDie_beforedecide) {
+			selfDestruct();
+		}
 		
 		return result[0];
 	}
@@ -862,7 +882,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return true;
 	}
 
-
 	public void sendHeartBeat(int id, boolean[] rmsUsed) {
 		processRmsUsed(rmsUsed, new ProxyRunnable() {
 			@Override
@@ -870,6 +889,86 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				proxy.isStillActive(id);
 			}
 		});
+	}
+
+	public boolean setDie(String server, String when) {
+		boolean isSetToDie = true;
+
+		if (!_isSetDie_used) {
+			_isSetDie_used = true;
+
+			if (server.equals("mw")) {
+				switch (when) {
+					case "beforevote":
+						_isSetDie_beforevote = true;
+						break;
+					case "aftervote_some":
+						_isSetDie_aftervote_some = true;
+						break;
+					case "beforedecide":
+						_isSetDie_beforedecide = true;
+						break;
+					case "afterdecide_none":
+						_isSetDie_afterdecide_none = true;
+						break;
+					case "afterdecide_some":
+						_isSetDie_afterdecide_some = true;
+						break;
+					case "afterdecide_all":
+						_isSetDie_afterdecide_all = true;
+						break;
+					default:
+						Trace.info("Invalid moment for a setDie");
+						isSetToDie = false;
+				}
+			} else {
+				if (when.equals("aftervote")) {
+					_isSetDie_rm = server;
+					_isSetDie_rm_aftervote = true;
+				} else {
+					final boolean[] result = {true};
+					executeOnRm(server, new ProxyRunnable() {
+						@Override
+						public void run(ResourceManager proxy) {
+							result[0] = result[0] && proxy.setDie(server, when);
+						}
+					});
+					isSetToDie = result[0];
+				}
+			}
+		} else {
+			Trace.info("Cannot use setDie more than once");
+			isSetToDie = false;
+		}
+
+		return isSetToDie;
+	}
+
+	public boolean resetDie() {
+		boolean[] result = {true};
+
+		if (_isSetDie_used) {
+			_isSetDie_used = false;
+			_isSetDie_beforevote = false;
+			_isSetDie_aftervote_some = false;
+			_isSetDie_beforedecide = false;
+			_isSetDie_afterdecide_none = false;
+			_isSetDie_afterdecide_some = false;
+			_isSetDie_afterdecide_all = false;
+			_isSetDie_rm = null;
+			_isSetDie_rm_aftervote = false;
+
+			boolean[] allRms = {true, true, true, true};
+
+			processRmsUsed(allRms, new ProxyRunnable() {
+				@Override
+				public void run(ResourceManager proxy) {
+					result[0] = result[0] && proxy.resetDie();
+				}
+			});
+		}
+
+		return result[0];
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {
@@ -933,6 +1032,42 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			runnable.run(proxy);
 			roomProxies.checkIn(proxy);
 		}
+	}
+
+	private boolean executeOnRm(String rm, ProxyRunnable runnable) {
+		rm = rm.toLowerCase();
+
+		switch (rm) {
+		case "customer": {
+			ResourceManager proxy = customerProxies.checkOut();
+			runnable.run(proxy);
+			customerProxies.checkIn(proxy);
+			break;
+		}
+		case "flight": {
+			ResourceManager proxy = flightProxies.checkOut();
+			runnable.run(proxy);
+			flightProxies.checkIn(proxy);
+			break;
+		}
+		case "car": {
+			ResourceManager proxy = carProxies.checkOut();
+			runnable.run(proxy);
+			carProxies.checkIn(proxy);
+			break;
+		}
+		case "room": {
+			ResourceManager proxy = roomProxies.checkOut();
+			runnable.run(proxy);
+			roomProxies.checkIn(proxy);
+			break;
+		}
+		default:
+			System.out.println("Error: No such RM: " + rm);
+			return false;
+		}
+
+		return true;
 	}
 
 	private abstract class ProxyRunnable {

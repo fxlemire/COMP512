@@ -646,6 +646,42 @@ public class Client extends WSClient {
                 }
                 break;
 
+            case 28: //setdie
+                if (arguments.size() != 3) {
+                    wrongNumber();
+                    break;
+                }
+
+                try {
+                    String server = getString(arguments.elementAt(1));
+                    String when = getString(arguments.elementAt(2));
+                    System.out.println("Ordering " + server + " server to crash at moment " + when + "...");
+                    boolean isSetToDie = proxy.setDie(server, when);
+
+                    if (isSetToDie) {
+                        System.out.println(server + " server has been successfully set to die at moment " + when + ".");
+                    } else {
+                        System.out.println(server + " server's survival instinct prevented us from convincing him to die. Long live the " + server + " server!");
+                        System.out.println("(Or you used the command in the wrong way... or it's been already used once... resetdie first, then setdie again!");
+                    }
+                } catch (Exception e) {
+                    printErrorMessage(e);
+                }
+                break;
+
+            case 29: //resetdie
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+
+                if (proxy.resetDie()) {
+                    System.out.println("Successfully reset all server crash settings to default values.");
+                } else {
+                    System.out.println("An error occurred. Somehow...");
+                }
+                break;
+
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -673,7 +709,7 @@ public class Client extends WSClient {
         System.out.println("deletecustomer\nqueryflight\nquerycar\nqueryroom\nquerycustomer");
         System.out.println("queryflightprice\nquerycarprice\nqueryroomprice");
         System.out.println("reserveflight\nreservecar\nreserveroom\nitinerary");
-        System.out.println("start\ncommit\nabort\nshutdown\ncrash");
+        System.out.println("start\ncommit\nabort\nshutdown\ncrash\nsetdie\nresetdie");
         System.out.println("quit");
         System.out.println("\ntype help, <commandname> for detailed info (note the use of comma).");
     }
@@ -889,6 +925,7 @@ public class Client extends WSClient {
             System.out.println("\tShuts the entire system down with all its rms");
             System.out.println("\nUsage: ");
             System.out.println("\tshutdown");
+            break;
 
             case 27: //crash
             System.out.println("Crash the specified RM");
@@ -896,6 +933,34 @@ public class Client extends WSClient {
             System.out.println("\tProvoke the specified RM to crash");
             System.out.println("\nUsage: ");
             System.out.println("\tcrash, <rm name (e.g. customer, flight, car, room, mw)>");
+            break;
+
+            case 28: //setdie
+            System.out.println("Set a moment for a server to die");
+            System.out.println("Purpose: ");
+            System.out.println("\tSet a specific moment for the specified server to crash");
+            System.out.println("\nUsage: ");
+            System.out.println("\tsetdie, <server name (e.g. customer, flight, car, room, mw)>, <when>");
+            System.out.println("\t<when>: if server = mw:");
+            System.out.println("\t\tbeforevote: crash before sending vote request");
+            System.out.println("\t\taftervote_some: crash after receiving some replies but not all");
+            System.out.println("\t\tbeforedecide: crash after receiving all replies but before deciding");
+            System.out.println("\t\tafterdecide_none: crash after deciding but before sending decision");
+            System.out.println("\t\tafterdecide_some: crash after sending some but not all decisions");
+            System.out.println("\t\tafterdecide_all: crash after having sent all decisions");
+            System.out.println("\t<when>: else:");
+            System.out.println("\t\tbeforevote: crash after receive vote request but before sending answer");
+            System.out.println("\t\taftervote: crash after sending answer");
+            System.out.println("\t\tafterdecide: crash after receiving decision but before committing/aborting");
+            break;
+
+            case 29: //resetdie
+            System.out.println("Resets all settings set via `setdie`");
+            System.out.println("Purpose: ");
+            System.out.println("\tRemoves all settings originally set with the command `setdie` such that servers won't die");
+            System.out.println("\nUsage: ");
+            System.out.println("\tresetdie");
+            break;
 
             default:
             System.out.println(command);

@@ -169,4 +169,8 @@ public interface ResourceManager {
     /* Prepare a transaction to be committed (vote phase) */
     @WebMethod
     public boolean prepare(int id);
+
+    @WebMethod
+    /* HeartBeat */
+    public boolean isStillActive(int id);
 }

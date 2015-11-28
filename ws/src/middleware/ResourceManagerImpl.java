@@ -12,7 +12,6 @@ import server.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,6 +43,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	@PostConstruct
 	public void init()
 	{
+		TransactionManager.getInstance().setMiddleware(this);
+
 		Context env = null;
 		try
 		{
@@ -274,7 +275,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 	
 	private void commitForSpecific(int id, boolean[] rmsUsed) {
-		
 		ResourceManager proxy;
 		if (rmsUsed[TransactionManager.CUSTOMER]) {
 			proxy = customerProxies.checkOut();
@@ -882,6 +882,33 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		}, 1000);
 		
 		return true;
+	}
+
+	public void sendHeartBeat(int id, boolean[] rmsUsed) {
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			proxy.isStillActive(id);
+			customerProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			proxy.isStillActive(id);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			proxy.isStillActive(id);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			proxy.isStillActive(id);
+			roomProxies.checkIn(proxy);
+		}
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {

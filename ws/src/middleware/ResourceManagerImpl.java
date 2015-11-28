@@ -12,7 +12,6 @@ import server.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -44,6 +43,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	@PostConstruct
 	public void init()
 	{
+		TransactionManager.getInstance().setMiddleware(this);
+
 		Context env = null;
 		try
 		{
@@ -184,30 +185,12 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 	
 	private void abortForSpecific(int id, boolean[] rmsUsed) {
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			proxy.abort(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			proxy.abort(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			proxy.abort(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			proxy.abort(id);
-			roomProxies.checkIn(proxy);
-		}
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.abort(id);
+			}
+		});
 	}
 	
 	@Override
@@ -274,62 +257,27 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 	
 	private void commitForSpecific(int id, boolean[] rmsUsed) {
-		
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			proxy.commit(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			proxy.commit(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			proxy.commit(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			proxy.commit(id);
-			roomProxies.checkIn(proxy);
-		}
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.commit(id);
+			}
+		});
 	}
 	
 	private boolean vote(int id, boolean[] rmsUsed) {
-		boolean result = true;
+		final boolean[] result = {true};
+
+		ProxyRunnable runnable = new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				result[0] = result[0] && proxy.prepare(id);
+			}
+		};
+
+		processRmsUsed(rmsUsed, runnable);
 		
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			result = result && proxy.prepare(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			result = result && proxy.prepare(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			result = result && proxy.prepare(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			result = result && proxy.prepare(id);
-			roomProxies.checkIn(proxy);
-		}
-		
-		return result;
+		return result[0];
 	}
 	
 	public boolean queryTxnResult(int id, int whence) {
@@ -876,29 +824,39 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		ResourceManager proxy = customerProxies.checkOut();
 		proxy.shutdown();
 		customerProxies.checkIn(proxy);
-		
+
 		proxy = carProxies.checkOut();
 		proxy.shutdown();
 		carProxies.checkIn(proxy);
-		
+
 		proxy = roomProxies.checkOut();
 		proxy.shutdown();
 		roomProxies.checkIn(proxy);
-		
+
 		proxy = flightProxies.checkOut();
 		proxy.shutdown();
 		flightProxies.checkIn(proxy);
-		
+
 		Timer end = new Timer();
 		end.schedule(new TimerTask() {
 
 			@Override
 			public void run() {
 				System.exit(0);
-			} 
+			}
 		}, 1000);
-		
+
 		return true;
+	}
+
+
+	public void sendHeartBeat(int id, boolean[] rmsUsed) {
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.isStillActive(id);
+			}
+		});
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {
@@ -935,5 +893,36 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		bill.add(bill.size(), "Total: $" + total);
 
 		return bill;
+	}
+
+	private void processRmsUsed(boolean[] rmsUsed, ProxyRunnable runnable) {
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			runnable.run(proxy);
+			customerProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			runnable.run(proxy);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			runnable.run(proxy);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			runnable.run(proxy);
+			roomProxies.checkIn(proxy);
+		}
+	}
+
+	private abstract class ProxyRunnable {
+		public abstract void run(ResourceManager proxy);
 	}
 }

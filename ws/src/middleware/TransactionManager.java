@@ -16,6 +16,7 @@ public class TransactionManager {
     private HashMap<Integer, TTL> _ttls = new HashMap<Integer, TTL>();
     private HashMap<Integer, Boolean> _transactionResults = new HashMap<Integer, Boolean>();
     private int _transactionId = 0;
+    private ResourceManagerImpl _mw;
     private static boolean _isInstantiated = false;
     private static TransactionManager tm = null;
     private static final int TIME_TO_LIVE = 180;
@@ -28,6 +29,10 @@ public class TransactionManager {
             _isInstantiated = true;
         }
         return tm;
+    }
+
+    public void setMiddleware(ResourceManagerImpl mw) {
+        _mw = mw;
     }
 
     public synchronized int start(ResourceManagerImpl rm) {
@@ -99,7 +104,14 @@ public class TransactionManager {
         return Arrays.copyOf(_currentTransactions.get(id), 4);
     }
 
-    private boolean unlockId(int id, LockManager lockManager) {
+    public synchronized void sendHeartBeat(int id) {
+        boolean[] rmsUsed = _currentTransactions.get(id);
+        if (rmsUsed != null) {
+            _mw.sendHeartBeat(id, rmsUsed);
+        }
+    }
+
+    private synchronized boolean unlockId(int id, LockManager lockManager) {
         boolean isUnlocked = lockManager.UnlockAll(id);
 
         if (isUnlocked) {

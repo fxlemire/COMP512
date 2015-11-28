@@ -178,4 +178,8 @@ public interface ResourceManager {
     /* Ask the middleware what the vote result was for a given transaction. */
     @WebMethod
     public boolean queryTxnResult(int id, int whence);
+
+    @WebMethod
+    /* HeartBeat */
+    public boolean isStillActive(int id);
 }

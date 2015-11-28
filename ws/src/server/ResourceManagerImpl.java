@@ -329,10 +329,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
      */
     private RMItem readData(int id, String key) {
         synchronized(bidon) {
-            TTL ttl = _ttls.get(id);
-            if (ttl != null) {
-                ttl.restart();
-            }
+            restartTTL(id);
 
             RMItem item = null;
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
@@ -927,6 +924,11 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return true;
 	}
 
+    @Override
+    public boolean isStillActive(int id) {
+        return restartTTL(id);
+    }
+
     private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
         TTL ttl = _ttls.get(id);
         if (ttl == null) {
@@ -949,15 +951,31 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " operation " + id, true);
     }
 
-    private void killTTL(int id) {
-        cancelTTL(id);
-        _ttls.remove(id);
+    private boolean killTTL(int id) {
+        boolean isCancelled = cancelTTL(id);
+        if (isCancelled) {
+            _ttls.remove(id);
+        }
+        return isCancelled;
     }
 
-    private void cancelTTL(int id) {
+    private boolean cancelTTL(int id) {
+        boolean isCancelled = false;
         TTL ttl = _ttls.get(id);
         if (ttl != null) {
             ttl.kill();
+            isCancelled = true;
         }
+        return isCancelled;
+    }
+
+    private boolean restartTTL(int id) {
+        boolean isRestarted = false;
+        TTL ttl = _ttls.get(id);
+        if (ttl != null) {
+            ttl.restart();
+            isRestarted = true;
+        }
+        return isRestarted;
     }
 }

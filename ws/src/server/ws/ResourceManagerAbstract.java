@@ -37,6 +37,10 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
     	return false;
     }
 
+    public boolean isStillActive(int id) {
+        return false; //not implemented
+    }
+
     private void printNotImplemented(String method) {
         System.out.println("Error: " + method + " not implemented.");
     }

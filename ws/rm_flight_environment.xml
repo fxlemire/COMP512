@@ -3,3 +3,18 @@
 	<env-entry-value>rm_flight</env-entry-value>
 	<env-entry-type>java.lang.String</env-entry-type>
 </env-entry>
+<env-entry>
+	<env-entry-name>mw_host</env-entry-name>
+	<env-entry-value>${mw.host}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>mw_port</env-entry-name>
+	<env-entry-value>${mw.port}</env-entry-value>
+	<env-entry-type>java.lang.Integer</env-entry-type>
+</env-entry>
+<env-entry>
+	<env-entry-name>mw_name</env-entry-name>
+	<env-entry-value>${mw.name}</env-entry-value>
+	<env-entry-type>java.lang.String</env-entry-type>
+</env-entry>

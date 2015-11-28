@@ -27,6 +27,15 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
         printNotImplemented("START");
         return -1;
     }
+    
+    public void signalCrash(int id, int whence) {
+    	printNotImplemented("SIGNAL CRASH");
+    }
+    
+    public boolean queryTxnResult(int id, int whence) {
+    	printNotImplemented("QUERY TXN RESULT");
+    	return false;
+    }
 
     public boolean isStillActive(int id) {
         return false; //not implemented

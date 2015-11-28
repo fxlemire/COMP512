@@ -51,6 +51,9 @@ public class PerfHandler implements SOAPHandler<SOAPMessageContext> {
 	        	}
 	        	System.out.println("[PERF] " + method + " " + txnId + ": " + elapsedUs + "us");
 	        }
+	        
+	        msg.writeTo(System.out);
+			System.out.println();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

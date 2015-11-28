@@ -14,11 +14,12 @@ public class TransactionManager {
 
     private HashMap<Integer, boolean[]> _currentTransactions = new HashMap<Integer, boolean[]>();
     private HashMap<Integer, TTL> _ttls = new HashMap<Integer, TTL>();
+    private HashMap<Integer, Boolean> _transactionResults = new HashMap<Integer, Boolean>();
     private int _transactionId = 0;
     private ResourceManagerImpl _mw;
     private static boolean _isInstantiated = false;
     private static TransactionManager tm = null;
-    private static final int TIME_TO_LIVE = 60;
+    private static final int TIME_TO_LIVE = 180;
 
     private TransactionManager() { }
 
@@ -41,12 +42,24 @@ public class TransactionManager {
         return transactionId;
     }
 
-    public boolean commit(int id, LockManager lockManager) {
+    public synchronized boolean commit(int id, LockManager lockManager) {
+    	_transactionResults.put(id, true);
         return unlockId(id, lockManager);
     }
 
-    public boolean abort(int id, LockManager lockManager) {
-        return unlockId(id, lockManager);
+    public synchronized boolean abort(int id, LockManager lockManager) {
+    	_transactionResults.put(id, false);
+    	return unlockId(id, lockManager);
+    }
+    
+    public synchronized boolean getTransactionResult(int id) {
+    	if (_transactionResults.containsKey(id)) {
+    		return _transactionResults.get(id);
+    	}
+    	
+    	// If we don't know about a given transaction, don't take any chances and say it
+    	// was aborted.
+    	return false;
     }
 
     public synchronized boolean hasValidId(int id) {
@@ -71,6 +84,19 @@ public class TransactionManager {
         }
 
         return isUpdated;
+    }
+    
+    /* This will be used when a RM crashes in the middle of a transaction,
+     * and thus doesn't "participate" in it anymore. */
+    public synchronized boolean removeTransactionRM(int id, int rm) {
+    	boolean[] rmsUsed = _currentTransactions.get(id);
+
+        if (rmsUsed != null) {
+            rmsUsed[rm] = false;
+            _currentTransactions.put(id, rmsUsed);
+        }
+        
+        return true;
     }
 
     public synchronized boolean[] getRMsUsed(int id) {

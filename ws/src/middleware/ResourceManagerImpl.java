@@ -280,6 +280,23 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return result[0];
 	}
 	
+	public boolean queryTxnResult(int id, int whence) {
+		Trace.info("Answering query for " +
+				"transaction " + id + " result...");
+		return _transactionManager.getTransactionResult(id);
+	}
+	
+	public void signalCrash(int id, int whence) {
+		Trace.info("Crash occured for transaction " + id + "...");
+		// We'll receive this if a RM crashed while the transaction is on-going.
+		// (i.e. no commit/abort from client was called). Data was lost, abort.
+		
+		// We don't want to send the abort to the RM that just crashed, because it's
+		// not ready to receive messages yet. Anyway, we don't even need to send it the abort.
+		_transactionManager.removeTransactionRM(id, whence);
+		abort(id);
+	}
+	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
 		
 		boolean result;

@@ -107,8 +107,9 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		// Records incomplete transactions, with their results (unknown, true [commit], false [abort])
 		HashMap<Integer, Object> incomplete = new HashMap<Integer, Object>();
 		
-		// TODO This parsing code could be more robust
-
+		// Records transactions that haven't made it to the 2PC
+		HashSet<Integer> noPC = new HashSet<>(); 
+		
 		try {
 			String line;
 			while ((line = logFile.readLine()) != null) {
@@ -118,19 +119,23 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				String op = entry[0];
 
 				switch (op) {
-					case "start":
-						incomplete.put(id, UNKNOWN_TXN_RESULT);
-						break;
-					case "result":
-						boolean result = Boolean.parseBoolean(entry[2]);
-						incomplete.put(id, result);
-						break;
-					case "end":
-						incomplete.remove(id);
-						break;
-					default:
-						Trace.warn("Unknown log entry " + line);
-						break;
+				case "participate":
+					noPC.add(id);
+					break;
+				case "start":
+					incomplete.put(id, UNKNOWN_TXN_RESULT);
+					noPC.remove(id); // We got to 2PC so don't track those guys anymore
+					break;
+				case "result":
+					boolean result = Boolean.parseBoolean(entry[2]);
+					incomplete.put(id, result);
+					break;
+				case "end":
+					incomplete.remove(id);
+					break;
+				default:
+					Trace.warn("Unknown log entry " + line);
+					break;
 				}
 			}
 
@@ -145,6 +150,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		// (i.e. tell them to abort a transaction they don't participate in). That's okay,
 		// they know how to deal with that.
 		final boolean[] allRMs = new boolean[] {true, true, true, true};
+		
+		//Go through those that didn't get to 2PC and abort them.
+		for(Integer txn: noPC) {
+			Trace.info("Found transaction " + txn + " without a commit/abort. Aborting...");
+			abortForSpecific(txn, allRMs);
+		}
+		
+		//Go through those that got as far as starting the 2PC.
 		for(Map.Entry<Integer, Object> e: incomplete.entrySet()) {
 			int id = e.getKey();
 			if (e.getValue() == UNKNOWN_TXN_RESULT) {

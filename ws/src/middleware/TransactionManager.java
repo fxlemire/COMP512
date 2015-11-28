@@ -1,6 +1,7 @@
 package middleware;
 
 import Util.TTL;
+import Util.Trace;
 import middleware.LockManager.LockManager;
 
 import java.util.Arrays;
@@ -83,6 +84,7 @@ public class TransactionManager {
             isUpdated = true;
         }
 
+        Trace.persist("logs/2PC_mw.log", "[2PC][mw] participate " + id + " " + rm, true);
         return isUpdated;
     }
     

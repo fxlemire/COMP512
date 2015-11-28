@@ -24,7 +24,7 @@ import javax.naming.NamingException;
 public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     private Hashtable<Integer, TTL> _ttls = new Hashtable<>();
 
-    private final int TIME_TO_LIVE = 10;
+    private final int TIME_TO_LIVE = 120;
 
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();

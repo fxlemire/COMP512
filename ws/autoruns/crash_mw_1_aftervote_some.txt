@@ -1,0 +1,5 @@
+setdie,mw,aftervote_some
+%1,start
+newcustomer,%1
+newflight,%1,1,1,1
+commit,%1

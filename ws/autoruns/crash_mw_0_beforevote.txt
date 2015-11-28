@@ -1,0 +1,4 @@
+setdie,mw,beforevote
+%1,start
+newcustomer,%1
+commit,%1

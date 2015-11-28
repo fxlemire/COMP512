@@ -962,6 +962,12 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         return isSetToDie;
     }
 
+	public boolean resetDie() {
+		_isSetDie_beforevote = false;
+		_isSetDie_afterdecide = false;
+		return true;
+	}
+
     private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
         TTL ttl = _ttls.get(id);
         if (ttl == null) {

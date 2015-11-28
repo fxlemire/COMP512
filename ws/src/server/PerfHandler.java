@@ -74,7 +74,7 @@ public class PerfHandler implements SOAPHandler<SOAPMessageContext> {
 	    	// The real txn id will appear at the output side
 	    	return DUMMY_TXN_ID; 
 	    } else if (methodName.equals("shutdown") || methodName.equals("crash") || methodName.equals("selfDestruct")
-				|| methodName.equals("setDie")) {
+				|| methodName.equals("setDie") || methodName.equals("resetDie")) {
 	    	// No txn id for shutdown
 	    	return NO_TXN_ID;
 	    } else {

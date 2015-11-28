@@ -207,7 +207,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	
 	@Override
 	public boolean crash(String rm) {
-		final boolean[] result = {false};
+		final boolean[] result = {true};
 
 		if (rm.equals("mw")) {
 			result[0] = selfDestruct();
@@ -215,7 +215,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			executeOnRm(rm, new ProxyRunnable() {
 				@Override
 				public void run(ResourceManager proxy) {
-					result[0] = proxy.selfDestruct();
+					result[0] = result[0] && proxy.selfDestruct();
 				}
 			});
 		}
@@ -913,7 +913,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				executeOnRm(server, new ProxyRunnable() {
 					@Override
 					public void run(ResourceManager proxy) {
-						result[0] = proxy.setDie(server, when);
+						result[0] = result[0] && proxy.setDie(server, when);
 					}
 				});
 				isSetToDie = result[0];
@@ -921,6 +921,30 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		}
 
 		return isSetToDie;
+	}
+
+	public boolean resetDie() {
+		boolean[] result = {true};
+
+		_isSetDie_beforevote = false;
+		_isSetDie_aftervote_some = false;
+		_isSetDie_beforedecide = false;
+		_isSetDie_afterdecide_none = false;
+		_isSetDie_afterdecide_some = false;
+		_isSetDie_afterdecide_all = false;
+		_isSetDie_rm = null;
+		_isSetDie_rm_aftervote = false;
+
+		boolean[] allRms = {true, true, true, true};
+
+		processRmsUsed(allRms, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				result[0] = result[0] && proxy.resetDie();
+			}
+		});
+
+		return result[0];
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {

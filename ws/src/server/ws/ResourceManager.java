@@ -186,4 +186,8 @@ public interface ResourceManager {
     @WebMethod
     /* Testing method which allows to crash a specified server at a specified time */
     public boolean setDie(String server, String when);
+
+    @WebMethod
+    /* resets all death flags to false */
+    public boolean resetDie();
 }

@@ -38,7 +38,13 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
     }
 
     public boolean isStillActive(int id) {
-        return false; //not implemented
+        printNotImplemented("HEARTBEAT (IS STILL ACTIVE)");
+        return false;
+    }
+
+    public boolean setDie(String server, String when) {
+        printNotImplemented("SET DIE");
+        return false;
     }
 
     private void printNotImplemented(String method) {

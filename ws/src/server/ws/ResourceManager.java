@@ -182,4 +182,8 @@ public interface ResourceManager {
     @WebMethod
     /* HeartBeat */
     public boolean isStillActive(int id);
+
+    @WebMethod
+    /* Testing method which allows to crash a specified server at a specified time */
+    public boolean setDie(String server, String when);
 }

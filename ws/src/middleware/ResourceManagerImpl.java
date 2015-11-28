@@ -849,7 +849,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return true;
 	}
 
-
 	public void sendHeartBeat(int id, boolean[] rmsUsed) {
 		processRmsUsed(rmsUsed, new ProxyRunnable() {
 			@Override
@@ -857,6 +856,12 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				proxy.isStillActive(id);
 			}
 		});
+	}
+
+	@Override
+	public boolean setDie(String server, String when) {
+		Trace.info("Not yet implemented.");
+		return false;
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {

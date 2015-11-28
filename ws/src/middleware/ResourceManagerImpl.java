@@ -332,6 +332,18 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		return result;
 	}
 	
+	public boolean queryTxnResult(int id) {
+		Trace.info("Answering query for transaction " + id + " result...");
+		return _transactionManager.getTransactionResult(id);
+	}
+	
+	public void signalCrash(int id) {
+		Trace.info("Crash occured for transaction " + id + "...");
+		// We'll receive this if a RM crashed while the transaction is on-going.
+		// (i.e. no commit/abort from client was called). Data was lost, abort.
+		abort(id);
+	}
+	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
 		
 		boolean result;

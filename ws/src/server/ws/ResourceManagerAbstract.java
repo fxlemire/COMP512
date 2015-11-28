@@ -27,6 +27,15 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
         printNotImplemented("START");
         return -1;
     }
+    
+    public void signalCrash(int id) {
+    	printNotImplemented("SIGNAL CRASH");
+    }
+    
+    public boolean queryTxnResult(int id) {
+    	printNotImplemented("QUERY TXN RESULT");
+    	return false;
+    }
 
     private void printNotImplemented(String method) {
         System.out.println("Error: " + method + " not implemented.");

@@ -185,30 +185,12 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 	
 	private void abortForSpecific(int id, boolean[] rmsUsed) {
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			proxy.abort(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			proxy.abort(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			proxy.abort(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			proxy.abort(id);
-			roomProxies.checkIn(proxy);
-		}
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.abort(id);
+			}
+		});
 	}
 	
 	@Override
@@ -275,61 +257,27 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	}
 	
 	private void commitForSpecific(int id, boolean[] rmsUsed) {
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			proxy.commit(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			proxy.commit(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			proxy.commit(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			proxy.commit(id);
-			roomProxies.checkIn(proxy);
-		}
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.commit(id);
+			}
+		});
 	}
 	
 	private boolean vote(int id, boolean[] rmsUsed) {
-		boolean result = true;
+		final boolean[] result = {true};
+
+		ProxyRunnable runnable = new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				result[0] = result[0] && proxy.prepare(id);
+			}
+		};
+
+		processRmsUsed(rmsUsed, runnable);
 		
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			result = result && proxy.prepare(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			result = result && proxy.prepare(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			result = result && proxy.prepare(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (result && rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			result = result && proxy.prepare(id);
-			roomProxies.checkIn(proxy);
-		}
-		
-		return result;
+		return result[0];
 	}
 	
 	public boolean addCars(int id, String location, int numCars, int carPrice) {

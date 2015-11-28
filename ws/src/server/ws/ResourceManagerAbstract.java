@@ -19,7 +19,7 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
     }
 
     public boolean selfDestruct() {
-        Util.System.shutInstance(-1);
+        System.exit(-1);
         return true;
     }
 

@@ -42,11 +42,6 @@ public abstract class ResourceManagerAbstract implements ResourceManager {
         return false;
     }
 
-    public boolean setDie(String server, String when) {
-        printNotImplemented("SET DIE");
-        return false;
-    }
-
     private void printNotImplemented(String method) {
         System.out.println("Error: " + method + " not implemented.");
     }

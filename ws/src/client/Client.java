@@ -927,7 +927,6 @@ public class Client extends WSClient {
             System.out.println("\tsetdie, <server name (e.g. customer, flight, car, room, mw)>, <when>");
             System.out.println("\t<when>: if server = mw:");
             System.out.println("\t\tbeforevote: crash before sending vote request");
-            System.out.println("\t\taftervote_none: crash after sending vote request and before receiving any replies");
             System.out.println("\t\taftervote_some: crash after receiving some replies but not all");
             System.out.println("\t\tbeforedecide: crash after receiving all replies but before deciding");
             System.out.println("\t\tafterdecide_none: crash after deciding but before sending decision");

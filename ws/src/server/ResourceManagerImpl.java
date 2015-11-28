@@ -41,6 +41,9 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     private static final int TXN_TO_ABORT = 0;
     private static final int TXN_TO_CONFIRM = 1;
 
+    private boolean _isSetDie_beforevote = false;
+    private boolean _isSetDie_afterdecide = false;
+
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
     protected RMHashtable m_itemHT = new RMHashtable();
@@ -368,6 +371,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
     // Abort a transaction.
     public boolean abort(int id) {
+        if (_isSetDie_afterdecide) {
+            selfDestruct();
+        }
+
         synchronized(bidon) {
             killTTL(id);
             _temporaryOperations.remove(id);
@@ -382,6 +389,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
     @Override
     public boolean prepare(int id) {
+        if (_isSetDie_beforevote) {
+            selfDestruct();
+        }
+
     	RMHashtable next_write = new RMHashtable();
     	HashSet<String> next_remove = new HashSet<String>();
     	
@@ -435,6 +446,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 
     // Commit a transaction.
     public boolean commit(int id) {
+        if (_isSetDie_afterdecide) {
+            selfDestruct();
+        }
+
         synchronized(bidon) {
             killTTL(id);
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
@@ -927,6 +942,24 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     @Override
     public boolean isStillActive(int id) {
         return restartTTL(id);
+    }
+
+    public boolean setDie(String which, String when) {
+        boolean isSetToDie = true;
+
+        switch (when) {
+        case "beforevote":
+            _isSetDie_beforevote = true;
+            break;
+        case "afterdecide":
+            _isSetDie_afterdecide = true;
+            break;
+        default:
+            Trace.info("Invalid moment for a setDie");
+            isSetToDie = false;
+        }
+
+        return isSetToDie;
     }
 
     private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {

@@ -80,6 +80,19 @@ public class TransactionManager {
 
         return isUpdated;
     }
+    
+    /* This will be used when a RM crashes in the middle of a transaction,
+     * and thus doesn't "participate" in it anymore. */
+    public synchronized boolean removeTransactionRM(int id, int rm) {
+    	boolean[] rmsUsed = _currentTransactions.get(id);
+
+        if (rmsUsed != null) {
+            rmsUsed[rm] = false;
+            _currentTransactions.put(id, rmsUsed);
+        }
+        
+        return true;
+    }
 
     public synchronized boolean[] getRMsUsed(int id) {
     	// Return a copy to prevent modifications from outside the synchronized block

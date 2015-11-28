@@ -45,6 +45,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
     protected RMHashtable m_itemHT = new RMHashtable();
     protected String thisRmName;
+    protected int thisRmIndex;
     
     // For the recovery protocol we may need to ask the 
     // MW for stuff directly, so we need this.
@@ -63,6 +64,21 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			mwHostname = (String) env.lookup("mw_host");
 			mwPort = (Integer) env.lookup("mw_port");
 			mwServiceName = (String) env.lookup("mw_name");
+			
+			switch(thisRmName) {
+			case "rm_customer":
+				thisRmIndex = 0;
+				break;
+			case "rm_flight":
+				thisRmIndex = 1;
+				break;
+			case "rm_car":
+				thisRmIndex = 2;
+				break;
+			case "rm_room":
+				thisRmIndex = 3;
+				break;
+			}
 		} 
 		catch (NamingException e)
 		{
@@ -131,7 +147,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				"<SOAP-ENV:Header/>" +
 				"<S:Body>" +
 					"<ns2:%METHOD% xmlns:ns2=\"http://ws.server/\">" +
-						"<arg0>%ID%</arg0>" +
+						"<arg0>%ID%</arg0><arg1>%WHENCE%</arg1>" +
 					"</ns2:%METHOD%>" +
 				"</S:Body>" +
 			"</S:Envelope>";
@@ -139,7 +155,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     	boolean result = true;
     	
     	String soapContent = soapTemplate.replace("%ID%", Integer.toString(id))
-    		.replace("%METHOD%", status == TXN_TO_ABORT ? "signalCrash" : "queryTxnResult");
+    		.replace("%METHOD%", status == TXN_TO_ABORT ? "signalCrash" : "queryTxnResult")
+    		.replace("%WHENCE%", Integer.toString(thisRmIndex));
     	byte[] b = soapContent.getBytes();
     	
     	try {
@@ -177,6 +194,8 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				String retval = outputString.substring(s + "<return>".length(), e);
 				result = Boolean.parseBoolean(retval);
 			}
+			
+			huc.disconnect();
 			
     	} catch (Exception e) {
     		Trace.error("I give up.");

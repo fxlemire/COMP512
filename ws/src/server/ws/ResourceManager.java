@@ -173,9 +173,9 @@ public interface ResourceManager {
     /* Tell the middleware that a crash has occured and the data
      * for the specified transaction has been lost. */
     @WebMethod
-    public void signalCrash(int id);
+    public void signalCrash(int id, int whence);
     
     /* Ask the middleware what the vote result was for a given transaction. */
     @WebMethod
-    public boolean queryTxnResult(int id);
+    public boolean queryTxnResult(int id, int whence);
 }

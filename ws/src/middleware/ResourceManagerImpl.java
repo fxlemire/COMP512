@@ -859,56 +859,39 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		ResourceManager proxy = customerProxies.checkOut();
 		proxy.shutdown();
 		customerProxies.checkIn(proxy);
-		
+
 		proxy = carProxies.checkOut();
 		proxy.shutdown();
 		carProxies.checkIn(proxy);
-		
+
 		proxy = roomProxies.checkOut();
 		proxy.shutdown();
 		roomProxies.checkIn(proxy);
-		
+
 		proxy = flightProxies.checkOut();
 		proxy.shutdown();
 		flightProxies.checkIn(proxy);
-		
+
 		Timer end = new Timer();
 		end.schedule(new TimerTask() {
 
 			@Override
 			public void run() {
 				System.exit(0);
-			} 
+			}
 		}, 1000);
-		
+
 		return true;
 	}
 
+
 	public void sendHeartBeat(int id, boolean[] rmsUsed) {
-		ResourceManager proxy;
-		if (rmsUsed[TransactionManager.CUSTOMER]) {
-			proxy = customerProxies.checkOut();
-			proxy.isStillActive(id);
-			customerProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.FLIGHT]) {
-			proxy = flightProxies.checkOut();
-			proxy.isStillActive(id);
-			flightProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.CAR]) {
-			proxy = carProxies.checkOut();
-			proxy.isStillActive(id);
-			carProxies.checkIn(proxy);
-		}
-
-		if (rmsUsed[TransactionManager.ROOM]) {
-			proxy = roomProxies.checkOut();
-			proxy.isStillActive(id);
-			roomProxies.checkIn(proxy);
-		}
+		processRmsUsed(rmsUsed, new ProxyRunnable() {
+			@Override
+			public void run(ResourceManager proxy) {
+				proxy.isStillActive(id);
+			}
+		});
 	}
 
 	private ArrayList<String> updateBill(ArrayList<String> finalBill, ResourceManager proxy, int id, int customerId) {
@@ -945,5 +928,36 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		bill.add(bill.size(), "Total: $" + total);
 
 		return bill;
+	}
+
+	private void processRmsUsed(boolean[] rmsUsed, ProxyRunnable runnable) {
+		ResourceManager proxy;
+		if (rmsUsed[TransactionManager.CUSTOMER]) {
+			proxy = customerProxies.checkOut();
+			runnable.run(proxy);
+			customerProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.FLIGHT]) {
+			proxy = flightProxies.checkOut();
+			runnable.run(proxy);
+			flightProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.CAR]) {
+			proxy = carProxies.checkOut();
+			runnable.run(proxy);
+			carProxies.checkIn(proxy);
+		}
+
+		if (rmsUsed[TransactionManager.ROOM]) {
+			proxy = roomProxies.checkOut();
+			runnable.run(proxy);
+			roomProxies.checkIn(proxy);
+		}
+	}
+
+	private abstract class ProxyRunnable {
+		public abstract void run(ResourceManager proxy);
 	}
 }

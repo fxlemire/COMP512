@@ -1,4 +1,4 @@
-setdie,customer,aftervote
 %1,start
+setdie,customer,aftervote
 newcustomer,%1
 commit,%1

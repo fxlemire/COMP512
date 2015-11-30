@@ -1,4 +1,4 @@
-setdie,mw,afterdecide_some
 %1,start
+setdie,mw,afterdecide_some
 newcustomer,%1
 commit,%1

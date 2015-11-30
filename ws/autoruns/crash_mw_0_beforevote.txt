@@ -1,4 +1,4 @@
-setdie,mw,beforevote
 %1,start
+setdie,mw,beforevote
 newcustomer,%1
 commit,%1

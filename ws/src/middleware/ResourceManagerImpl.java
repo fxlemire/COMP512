@@ -253,10 +253,11 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		if (!decision) {
 			result = abort(id);
 		} else {
-			commitForSpecific(id, rmsUsed);
 			result = _transactionManager.commit(id, _lockManager);
+			commitForSpecific(id, rmsUsed);
 		}
 
+		// TODO try to see if this can be written after a RM crash/recovery cycle.
 		Trace.persist("logs/2PC_mw.log", "[2PC][mw] end " + id, true);
 
 		if (_isSetDie_afterdecide_all) {
@@ -304,6 +305,11 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 					proxy.selfDestruct();
 				}
 			});
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				//NOTHING
+			}
 		}
 
 		if (_isSetDie_beforedecide) {

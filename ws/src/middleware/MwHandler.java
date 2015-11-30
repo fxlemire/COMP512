@@ -33,7 +33,8 @@ public class MwHandler implements SOAPHandler<SOAPMessageContext>/*extends PerfH
 					//m.writeTo(System.out);
 					//System.out.println();
 					return false;
-				} else {
+				} else if (!mc.get(PerfHandler.NAME_KEY).equals("signalCrash") && 
+						!mc.get(PerfHandler.NAME_KEY).equals("queryTxnResult")) {
 					Object txnId = mc.get(PerfHandler.TXN_ID_KEY);
 					if (txnId != PerfHandler.NO_TXN_ID && txnId != PerfHandler.DUMMY_TXN_ID) {
 						int id = Integer.parseInt((String) txnId);
@@ -50,6 +51,9 @@ public class MwHandler implements SOAPHandler<SOAPMessageContext>/*extends PerfH
 	}
 	
 	private boolean checkTxnValid(SOAPMessageContext mc, SOAPBody msg) {
+		if (mc.get(PerfHandler.NAME_KEY).equals("queryTxnResult"))
+			return true;
+		
 		Object txnId = mc.get(PerfHandler.TXN_ID_KEY);
 		if (txnId == PerfHandler.NO_TXN_ID || txnId == PerfHandler.DUMMY_TXN_ID)
 			return true;

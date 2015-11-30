@@ -42,8 +42,8 @@
 	
 	<!-- Properties for the automated client -->
 	<property name="autocli.txnrate" value="10000" />
-	<property name="autocli.txnfile" value="./autoruns/onecli_manyrms.txt" />
-	<property name="autocli.ntxn" value="2000" />
+	<property name="autocli.txnfile" value="./autoruns/onecli_onerm.txt" />
+	<property name="autocli.ntxn" value="6000" />
 	<property name="autocli.mode" value="seq" />
 
 	<!-- Get current time in a property (for potential use later) -->
@@ -58,6 +58,10 @@
             <include name="*.jar"/>
         </fileset>
     </path>
+	
+	<target name="lol">
+	<echo>${java.home}</echo>
+	</target>
 	
 	<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
         <classpath refid="jaxws.classpath"/>
@@ -254,6 +258,10 @@
 				<mapper type="glob" from="mw.*" to="service.*" />
 			</propertyset>
 		</antcall>
+	</target>
+	
+	<target name="mw">
+		<antcall target="middleware" />
 	</target>
 	
 	<!-- Generate and run a RM, with an appropriate name. -->

@@ -126,12 +126,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     			
     			boolean result = callToMiddleware(id, status);
     			if (result) {
+    				Trace.info("Status was commit.");
     				commitIncompleteTxn(id);
     			} else {
     				// Abort. Since we're recovering, we have nothing in memory
     				// for this transaction. Further, if the decision was abort,
     				// there's no way we wrote anything to the master. Therefore,
     				// we just have to delete the next version.
+    				Trace.info("Status was abort.");
     				deleteNextVersion(id);
     			}
     		}
@@ -191,10 +193,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			}
 			
 			if (status == TXN_TO_CONFIRM) {
-				int s = outputString.indexOf("<return>");
 				int e = outputString.indexOf("</return>");
+				int s = outputString.lastIndexOf('>', e);
 				
-				String retval = outputString.substring(s + "<return>".length(), e);
+				String retval = outputString.substring(s + 1, e);
 				result = Boolean.parseBoolean(retval);
 			}
 			
@@ -372,7 +374,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     // Abort a transaction.
     public boolean abort(int id) {
         if (_isSetDie_afterdecide) {
-            selfDestruct();
+            System.exit(-1);
         }
 
         synchronized(bidon) {
@@ -447,7 +449,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     // Commit a transaction.
     public boolean commit(int id) {
         if (_isSetDie_afterdecide) {
-            selfDestruct();
+            System.exit(-1);
         }
 
         synchronized(bidon) {

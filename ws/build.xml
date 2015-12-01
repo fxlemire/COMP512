@@ -5,6 +5,8 @@
 	<!-- Allow swarm to override any properties of this xml -->
 	<property file="swarm_${swarmid}.properties" />
 
+	<!-- <property name="logdir" value="logs" /> -->
+	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
 	<property name="rm.flight.name" value="rm_flight"/>
@@ -43,7 +45,7 @@
 	<!-- Properties for the automated client -->
 	<property name="autocli.txnrate" value="10000" />
 	<property name="autocli.txnfile" value="./autoruns/onecli_onerm.txt" />
-	<property name="autocli.ntxn" value="6000" />
+	<property name="autocli.ntxn" value="-1" />
 	<property name="autocli.mode" value="seq" />
 
 	<!-- Get current time in a property (for potential use later) -->
@@ -377,20 +379,6 @@
     </target>
 	
 	<target name="autoclient" depends="build-client">
-        <java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log">
-            <classpath>
-                <path refid="jaxws.classpath"/>
-                <pathelement location="${basedir}/build/classes"/>
-            </classpath>
-            <arg value="${mw.name}"/>
-            <arg value="${mw.host}"/>
-            <arg value="${mw.port}"/>
-			<arg value="${autocli.txnfile}"/>
-            <arg value="${autocli.txnrate}"/>
-            <arg value="${autocli.ntxn}"/>
-			<arg value="${autocli.mode}"/>
-        </java>
-		
 		<java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log"
 			if:set="logdir">
             <classpath>
@@ -406,7 +394,10 @@
 			<arg value="${autocli.mode}"/>
         </java>
 		
-		<java classname="client.AutoClient" unless:set="logdir">
+		<java classname="client.AutoClient" fork="true" unless:set="logdir">
+			<jvmarg value="-Xdebug"/>
+            <jvmarg value="-Xrunjdwp:server=y,transport=dt_socket,address=5554,suspend=n"/>
+		
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>

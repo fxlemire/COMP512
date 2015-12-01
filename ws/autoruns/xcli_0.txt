@@ -1,0 +1,92 @@
+# This file is intended to be run in the random mode
+# Customers 1-2 will non-flight things in one city each (mtl and nyc)
+
+### Reset things ###
+%1,start
+deletecustomer,%1,1
+deletecustomer,%1,2
+newcustomerid,%1,1
+newcustomerid,%1,2
+commit,%1
+
+### Read queries ###
+%1,start
+queryroom,%1,mtl
+querycar,%1,mtl
+querycustomer,%1,1
+commit,%1
+
+%1,start
+queryroom,%1,nyc
+querycar,%1,nyc
+querycustomer,%1,2
+commit,%1
+
+%1,start
+querycustomer,%1,1
+queryroomprice,%1,mtl
+querycarprice,%1,mtl
+commit,%1
+
+%1,start
+querycustomer,%1,2
+queryroomprice,%1,nyc
+querycarprice,%1,nyc
+commit,%1
+
+### Write queries ###
+# (Or just "greedy"; try to write and if it fails abort)
+
+%1,start
+%2,reservecar,%1,1,mtl
+abort,%1,%2,==,false
+%2,reserveroom,%1,1,mtl
+abort,%1,%2,==,false
+commit,%1
+
+%1,start
+reservecar,%1,1,mtl
+%2,reservecar,%1,1,mtl
+abort,%1,%2,==,false
+commit,%1
+
+%1,start
+%2,reservecar,%1,2,nyc
+abort,%1,%2,==,false
+%2,reserveroom,%1,2,nyc
+abort,%1,%2,==,false
+commit,%1
+
+%1,start
+reservecar,%1,2,nyc
+reservecar,%1,2,nyc
+%2,reservecar,%1,2,nyc
+abort,%1,%2,==,false
+commit,%1
+
+### Read-write queries ###
+# Read, abort if you can't, if you can then write
+
+%1,start
+%2,querycar,%1,mtl
+abort,%1,%2,==,0
+reservecar,%1,1,mtl
+commit,%1
+
+%1,start
+%2,querycar,%1,nyc
+abort,%1,%2,==,0
+reservecar,%1,2,nyc
+commit,%1
+
+%1,start
+%2,querycar,%1,mtl
+abort,%1,%2,==,0
+reservecar,%1,1,mtl
+commit,%1
+
+%1,start
+%2,queryroom,%1,nyc
+abort,%1,%2,==,0
+reserveroom,%1,2,nyc
+commit,%1

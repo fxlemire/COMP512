@@ -5,7 +5,7 @@
 	<!-- Allow swarm to override any properties of this xml -->
 	<property file="swarm_${swarmid}.properties" />
 
-	<!-- <property name="logdir" value="logs" /> -->
+	<property name="logdir" value="logs" />
 	
 	<!-- Properties for the flight RM -->
 	<property name="rm.flight.target" value="server" />
@@ -43,8 +43,8 @@
     <property name="mw.debugport" value="38090"/>
 	
 	<!-- Properties for the automated client -->
-	<property name="autocli.txnrate" value="10000" />
-	<property name="autocli.txnfile" value="./autoruns/onecli_onerm.txt" />
+	<property name="autocli.txnrate" value="1000" />
+	<property name="autocli.txnfile" value="./autoruns/xcli_create.txt" />
 	<property name="autocli.ntxn" value="-1" />
 	<property name="autocli.mode" value="seq" />
 
@@ -60,10 +60,6 @@
             <include name="*.jar"/>
         </fileset>
     </path>
-	
-	<target name="lol">
-	<echo>${java.home}</echo>
-	</target>
 	
 	<taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
         <classpath refid="jaxws.classpath"/>
@@ -377,6 +373,22 @@
             <arg value="${mw.port}"/>
         </java>
     </target>
+	
+	<target name="autoclient_perf" depends="build-client">
+		<java classname="client.AutoClient" output="${logdir}/autoclient${acid}_${now}.log">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${mw.name}"/>
+            <arg value="${mw.host}"/>
+            <arg value="${mw.port}"/>
+			<arg value="${autocli.txnfile}"/>
+            <arg value="${autocli.txnrate}"/>
+            <arg value="${autocli.ntxn}"/>
+			<arg value="${autocli.mode}"/>
+        </java>
+	</target>
 	
 	<target name="autoclient" depends="build-client">
 		<java classname="client.AutoClient" output="${logdir}/autoclient_${now}.log"

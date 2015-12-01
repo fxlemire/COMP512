@@ -863,6 +863,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
                 Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
                         + reservedItem.getKey() + " reserved/available = " 
                         + item.getReserved() + "/" + item.getCount());
+                synchronized(bidon) {
+                    addTemporaryOperation(id, item.getKey(), item, ClientOperation.Type.WRITE);
+                }
+                
             }
             // Remove the customer from the storage.
             removeData(id, cust.getKey());

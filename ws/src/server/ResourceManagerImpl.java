@@ -402,10 +402,12 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     	
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
+        // If there are no operations when we are asked to prepare, something went wrong.
+        // Indeed, we shouldn't be asked to prepare if only read operations were performed,
+        // so we should tell the MW that our data was somehow lost.
         if (operations == null) {
-            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + true, true);
             cancelTTL(id);
-            return true;
+            return false;
         }
 
         Iterator<ClientOperation> it = operations.iterator();

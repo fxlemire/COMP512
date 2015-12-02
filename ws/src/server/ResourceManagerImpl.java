@@ -407,6 +407,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         // so we should tell the MW that our data was somehow lost.
         if (operations == null) {
             cancelTTL(id);
+            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + false, true);
             return false;
         }
 

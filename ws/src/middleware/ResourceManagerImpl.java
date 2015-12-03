@@ -31,7 +31,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 	
 	private static final Object UNKNOWN_TXN_RESULT = new Object();
 	
-	private static final int PROXY_POOL_SIZE = 4;
+	private static final int PROXY_POOL_SIZE = 16;
 	
 	private ObjectPool<ResourceManager> flightProxies;
 	private ObjectPool<ResourceManager> carProxies;

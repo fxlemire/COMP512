@@ -15,21 +15,21 @@ commit,%1
 
 ### Read queries ###
 %1,start
-queryflight%1,10
+queryflight,%1,10
 queryflight,%1,11
 querycar,%1,mtl
 querycustomer,%1,7
 commit,%1
 
 %1,start
-queryflight%1,10
+queryflight,%1,10
 queryflight,%1,11
 queryroom,%1,nyc
 querycustomer,%1,8
 commit,%1
 
 %1,start
-queryflight%1,30
+queryflight,%1,30
 queryflight,%1,31
 querycar,%1,bos
 queryroom,%1,bos
@@ -37,7 +37,7 @@ querycustomer,%1,9
 commit,%1
 
 %1,start
-queryflight%1,20
+queryflight,%1,20
 queryflight,%1,21
 querycustomer,%1,10
 commit,%1

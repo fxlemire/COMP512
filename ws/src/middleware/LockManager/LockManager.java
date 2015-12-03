@@ -68,7 +68,6 @@ public class LockManager
                         		this.lockTable.remove((XObj) elts.get(i));
                         	}
                         	
-                        	this.lockTable.add(trxnObj);
                             this.lockTable.add(dataObj);
                         } else {
                             // a lock request that is not lock conversion

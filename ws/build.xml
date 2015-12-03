@@ -374,7 +374,9 @@
         </java>
     </target>
 	
-	<target name="autoclient_perf" depends="build-client">
+	<!-- This should only be used in a script. Make sure you run build-client
+	first, and set the logdir and acid properties appropriately. -->
+	<target name="autoclient_perf">
 		<java classname="client.AutoClient" output="${logdir}/autoclient${acid}_${now}.log">
             <classpath>
                 <path refid="jaxws.classpath"/>

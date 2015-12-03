@@ -247,8 +247,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		
 		boolean result;
 		boolean[] rmsUsed = _transactionManager.getRMsUsed(id);
+		boolean decision = false;
 
-		boolean decision = vote(id, rmsUsed);
+		try {
+			decision = vote(id, rmsUsed);
+		} catch (Exception e) {
+			//nothing to do: voting did not work so transaction will abort
+		}
+
 		Trace.persist("logs/2PC_mw.log", "[2PC][mw] result " + id + " " + decision, true);
 
 		if (_isSetDie_afterdecide_none) {
@@ -276,9 +282,13 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		processRmsUsed(rmsUsed, new ProxyRunnable() {
 			@Override
 			public void run(ResourceManager proxy) {
-				proxy.commit(id);
-				if (_isSetDie_afterdecide_some) {
-					selfDestruct();
+				try {
+					proxy.commit(id);
+					if (_isSetDie_afterdecide_some) {
+						selfDestruct();
+					}
+				} catch (Exception e) {
+					//do nothing
 				}
 			}
 		});

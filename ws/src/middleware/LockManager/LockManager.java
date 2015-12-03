@@ -135,7 +135,7 @@ public class LockManager
                                 
                                 // remove interrupted thread from waitTable only if no
                                 // other transaction has locked this data item
-                                if (vect1.size () == 0) {
+                                if (vect1.size () == 0 || (vect1.size() == 1 && ((DataObj) vect1.get(0)).getXId() == waitObj.getXId())) {
                                     this.waitTable.remove(waitObj);     
                                     
                                     try {

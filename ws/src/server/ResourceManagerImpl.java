@@ -8,14 +8,7 @@ package server;
 import Util.Trace;
 import Util.TTL;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
@@ -92,17 +85,28 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     // Load whatever data we had on disk last time
     private void reload() {
     	try {
-    		ObjectInputStream ois = new ObjectInputStream(
-    									new FileInputStream("data/" + thisRmName + ".master"));
-    		m_itemHT = (RMHashtable) ois.readObject();
-    		ois.close();
-    	} catch (FileNotFoundException e) {
-    		// Nothing to do here, assume we're starting fresh
+			ObjectInputStream ois = null;
+
+			try {
+				ois = new ObjectInputStream(new FileInputStream("data/" + thisRmName + ".master"));
+				Files.deleteIfExists(Paths.get("data/" + thisRmName + ".master2"));
+			}  catch (FileNotFoundException e) {
+				File master2 = new File("data/" + thisRmName + ".master2");
+				ois = new ObjectInputStream(new FileInputStream(master2));
+				master2.renameTo(new File("data/" + thisRmName + ".master"));
+			} catch (IOException e) {
+				Trace.error("Error when reading master file");
+			}
+
+			if (ois != null) {
+				m_itemHT = (RMHashtable) ois.readObject();
+				ois.close();
+			}
     	} catch (IOException e) {
-    		Trace.error("Error when reading master file");
-    	} catch (ClassNotFoundException e) {
-    		Trace.error("NO");
-    	}
+			Trace.error("Error when reading master file");
+		} catch (ClassNotFoundException e) {
+			Trace.error("NO");
+		}
     }
     
     private void checkRecover() {
@@ -229,7 +233,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
     		List<Object> objects = new ArrayList<>();
             objects.add(m_itemHT);
 
-            Trace.persist("data/" + thisRmName + ".master", objects, false);
+			persistData(objects);
 
             deleteNextVersion(id);
     		
@@ -483,7 +487,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
             List<Object> objects = new ArrayList<>();
             objects.add(m_itemHT);
 
-            Trace.persist("data/" + thisRmName + ".master", objects, false);
+           persistData(objects);
 
             deleteNextVersion(id);
         }
@@ -1023,4 +1027,18 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
         }
         return isRestarted;
     }
+
+	private boolean persistData(List<Object> objects) {
+		Trace.persist("data/" + thisRmName + ".master2", objects, false);
+
+		try {
+			Files.deleteIfExists(Paths.get("data/" + thisRmName + ".master"));
+			File master2 = new File("data/" + thisRmName + ".master2");
+			master2.renameTo(new File("data/" + thisRmName + ".master"));
+		} catch (IOException e) {
+			//couldn't delete .master
+		}
+
+		return true;
+	}
 }

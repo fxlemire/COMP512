@@ -12,6 +12,7 @@ import server.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -148,10 +149,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 					break;
 				}
 			}
-
-			// Get rid of the old log file, we don't need it anymore
-			logFile.close();
-			Files.delete(Paths.get("logs/2PC_mw.log"));
 		} catch (Exception e) {
 			// do nothing
 		}
@@ -188,6 +185,14 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 		
 		// At this point, none of the RMs should have any pending transactions, so it's okay to
 		// start fresh
+
+		try {
+			// Get rid of the old log file, we don't need it anymore
+			logFile.close();
+			Files.delete(Paths.get("logs/2PC_mw.log"));
+		} catch (IOException e) {
+			//do nothing
+		}
 	}
 
 	public boolean abort(int id) {

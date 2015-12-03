@@ -9,7 +9,6 @@ import Util.Trace;
 import Util.TTL;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -29,8 +28,6 @@ import javax.jws.WebService;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
-import server.ws.ResourceManager;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="rm_handler.xml")
@@ -299,10 +296,6 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 						break;
 				}
 			}
-
-			// Get rid of the old log file, we don't need it anymore
-			logFile.close();
-			Files.delete(Paths.get("logs/2PC_" + thisRmName + ".log"));
 			
 			// This set contains any txn id that crashed before receiving a confirmation,
 			// but after successfully sending an abort. Therefore we know that the MW
@@ -310,6 +303,10 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			for(Integer id: trackAbort) {
 				deleteNextVersion(id);
 			}
+
+			// Get rid of the old log file, we don't need it anymore
+			logFile.close();
+			Files.delete(Paths.get("logs/2PC_" + thisRmName + ".log"));
 			
 		} catch (Exception e) {
 			// do nothing

@@ -5,6 +5,11 @@ webapps/
 ## PROJECT - GENERATED ###
 ws/etc/middleware/web.xml
 ws/etc/server/web.xml
+ws/etc/mw/web.xml
+ws/etc/rm_car/web.xml
+ws/etc/rm_customer/web.xml
+ws/etc/rm_flight/web.xml
+ws/etc/rm_room/web.xml
 ws/swarm.config
 ws/swarm.trot.config
 
@@ -86,3 +91,8 @@ local.properties
 **/*.csv
 # log
 **/*.log
+
+# data
+**/*.next
+**/*.master
+**/*.master2

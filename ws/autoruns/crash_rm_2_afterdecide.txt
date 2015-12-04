@@ -1,0 +1,4 @@
+%1,start
+setdie,customer,afterdecide
+newcustomer,%1
+commit,%1

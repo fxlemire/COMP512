@@ -1,15 +1,17 @@
-package middleware;
+package Util;
+
+import server.ws.ResourceManagerAbstract;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class TTL {
     private int _transactionId;
-    private ResourceManagerImpl _rm;
+    private ResourceManagerAbstract _rm;
     private Timer _timer;
     private int _delay;
 
-    public TTL(int id, ResourceManagerImpl rm, int seconds) {
+    public TTL(int id, ResourceManagerAbstract rm, int seconds) {
         _transactionId = id;
         _rm = rm;
         _timer = new Timer();

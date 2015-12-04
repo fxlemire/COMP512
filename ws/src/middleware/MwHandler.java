@@ -11,8 +11,6 @@ import javax.xml.ws.handler.MessageContext;
 import javax.xml.ws.handler.soap.SOAPHandler;
 import javax.xml.ws.handler.soap.SOAPMessageContext;
 
-import middleware.TransactionManager;
-
 import server.PerfHandler;
 
 public class MwHandler implements SOAPHandler<SOAPMessageContext>/*extends PerfHandler*/ {
@@ -35,6 +33,13 @@ public class MwHandler implements SOAPHandler<SOAPMessageContext>/*extends PerfH
 					//m.writeTo(System.out);
 					//System.out.println();
 					return false;
+				} else if (!mc.get(PerfHandler.NAME_KEY).equals("signalCrash") && 
+						!mc.get(PerfHandler.NAME_KEY).equals("queryTxnResult")) {
+					Object txnId = mc.get(PerfHandler.TXN_ID_KEY);
+					if (txnId != PerfHandler.NO_TXN_ID && txnId != PerfHandler.DUMMY_TXN_ID) {
+						int id = Integer.parseInt((String) txnId);
+						TransactionManager.getInstance().sendHeartBeat(id);
+					}
 				}
 			}
 			
@@ -46,6 +51,9 @@ public class MwHandler implements SOAPHandler<SOAPMessageContext>/*extends PerfH
 	}
 	
 	private boolean checkTxnValid(SOAPMessageContext mc, SOAPBody msg) {
+		if (mc.get(PerfHandler.NAME_KEY).equals("queryTxnResult"))
+			return true;
+		
 		Object txnId = mc.get(PerfHandler.TXN_ID_KEY);
 		if (txnId == PerfHandler.NO_TXN_ID || txnId == PerfHandler.DUMMY_TXN_ID)
 			return true;

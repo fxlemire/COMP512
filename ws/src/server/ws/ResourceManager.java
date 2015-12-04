@@ -157,4 +157,37 @@ public interface ResourceManager {
     /* Abort a transaction. */
     @WebMethod
     public boolean abort(int id);
+
+    /* Crash a RM. */
+    @WebMethod
+    public boolean crash(String rm);
+
+    /* Crash method for RMs. */
+    @WebMethod
+    public boolean selfDestruct();
+    
+    /* Prepare a transaction to be committed (vote phase) */
+    @WebMethod
+    public boolean prepare(int id);
+    
+    /* Tell the middleware that a crash has occured and the data
+     * for the specified transaction has been lost. */
+    @WebMethod
+    public void signalCrash(int id, int whence);
+    
+    /* Ask the middleware what the vote result was for a given transaction. */
+    @WebMethod
+    public boolean queryTxnResult(int id, int whence);
+
+    @WebMethod
+    /* HeartBeat */
+    public boolean isStillActive(int id);
+
+    @WebMethod
+    /* Testing method which allows to crash a specified server at a specified time */
+    public boolean setDie(String server, String when);
+
+    @WebMethod
+    /* resets all death flags to false */
+    public boolean resetDie();
 }

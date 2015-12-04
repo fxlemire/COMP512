@@ -63,13 +63,22 @@ public class LockManager
                          
                         if (bConvert.get(0) == true) {
                             // lock conversion 
-                        	Vector elts = this.lockTable.elements(dataObj);
-                        	for (int i = 0; i < elts.size(); i++) {
-                        		this.lockTable.remove((XObj) elts.get(i));
+                        	Vector datas = this.lockTable.elements(dataObj);
+                        	for (int i = 0; i < datas.size(); i++) {
+                        		this.lockTable.remove((DataObj) datas.get(i));
                         	}
                         	
-                        	this.lockTable.add(trxnObj);
+                        	Vector trxns = this.lockTable.elements(trxnObj);
+                        	for (int i = 0; i < trxns.size(); i++) {
+                        		TrxnObj target = (TrxnObj) trxns.get(i);
+                        		if (target.strData.equals(dataObj.strData)) {
+                        			this.lockTable.remove((TrxnObj) trxns.get(i));
+                        			break;
+                        		}
+                        	}
+                        	
                             this.lockTable.add(dataObj);
+                            this.lockTable.add(trxnObj);
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);
@@ -135,7 +144,7 @@ public class LockManager
                                 
                                 // remove interrupted thread from waitTable only if no
                                 // other transaction has locked this data item
-                                if (vect1.size () == 0) {
+                                if (vect1.size () == 0 || (vect1.size() == 1 && ((DataObj) vect1.get(0)).getXId() == waitObj.getXId())) {
                                     this.waitTable.remove(waitObj);     
                                     
                                     try {
@@ -174,8 +183,8 @@ public class LockManager
                     }
                 } 
             }
-        } 
-
+        }
+        
         return true;
     }
 
@@ -221,7 +230,7 @@ public class LockManager
                     if (dataObj2.getLockType() == DataObj.WRITE) {
                         // transaction is requesting a READ lock and some other transaction
                         // already has a WRITE lock on it ==> conflict
-                        System.out.println("Want READ, someone has WRITE");
+                        System.out.println(dataObj.getXId() + " wants READ, " + dataObj2.getXId() +  " has WRITE");
                         return true;
                     }
                     else {
@@ -230,7 +239,7 @@ public class LockManager
                 } else if (dataObj.getLockType() == DataObj.WRITE) {
                     // transaction is requesting a WRITE lock and some other transaction has either
                     // a READ or a WRITE lock on it ==> conflict
-                    System.out.println("Want WRITE, someone has READ or WRITE");
+                    System.out.println(dataObj.getXId() + " wants WRITE, " + dataObj2.getXId() +  " has READ or WRITE");
                     return true;
                 }
             }

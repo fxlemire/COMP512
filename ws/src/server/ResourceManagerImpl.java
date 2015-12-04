@@ -5,18 +5,328 @@
 
 package server;
 
+import Util.Trace;
+import Util.TTL;
+
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
+import javax.annotation.PostConstruct;
 import javax.jws.HandlerChain;
 import javax.jws.WebService;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 @HandlerChain(file="rm_handler.xml")
-public class ResourceManagerImpl implements server.ws.ResourceManager {	
+public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
+    private Hashtable<Integer, TTL> _ttls = new Hashtable<>();
+
+    private static final int TIME_TO_LIVE = 300;
+    private static final int TXN_TO_ABORT = 0;
+    private static final int TXN_TO_CONFIRM = 1;
+
+    private boolean _isSetDie_beforevote = false;
+    private boolean _isSetDie_afterdecide = false;
 
     protected final Object bidon = new Object();
     protected Hashtable<Integer, LinkedList<ClientOperation>> _temporaryOperations = new Hashtable<Integer, LinkedList<ClientOperation>>();
     protected RMHashtable m_itemHT = new RMHashtable();
+    protected String thisRmName;
+    protected int thisRmIndex;
+    
+    // For the recovery protocol we may need to ask the 
+    // MW for stuff directly, so we need this.
+    protected String mwHostname;
+    protected int mwPort;
+    protected String mwServiceName;
+    
+    @PostConstruct
+    public void init()
+    {
+    	Context env = null;
+		try
+		{
+			env = (Context) new InitialContext().lookup("java:comp/env");
+			thisRmName = (String) env.lookup("name");
+			mwHostname = (String) env.lookup("mw_host");
+			mwPort = (Integer) env.lookup("mw_port");
+			mwServiceName = (String) env.lookup("mw_name");
+			
+			switch(thisRmName) {
+			case "rm_customer":
+				thisRmIndex = 0;
+				break;
+			case "rm_flight":
+				thisRmIndex = 1;
+				break;
+			case "rm_car":
+				thisRmIndex = 2;
+				break;
+			case "rm_room":
+				thisRmIndex = 3;
+				break;
+			}
+		} 
+		catch (NamingException e)
+		{
+			throw new RuntimeException(e);
+		}
+		
+		reload();
+		checkRecover();
+    }
+    
+    // Load whatever data we had on disk last time
+    private void reload() {
+    	try {
+			ObjectInputStream ois = null;
+
+			try {
+				ois = new ObjectInputStream(new FileInputStream("data/" + thisRmName + ".master"));
+				Files.deleteIfExists(Paths.get("data/" + thisRmName + ".master2"));
+			}  catch (FileNotFoundException e) {
+				File master2 = new File("data/" + thisRmName + ".master2");
+				ois = new ObjectInputStream(new FileInputStream(master2));
+				master2.renameTo(new File("data/" + thisRmName + ".master"));
+			} catch (IOException e) {
+				Trace.error("Error when reading master file");
+			}
+
+			if (ois != null) {
+				m_itemHT = (RMHashtable) ois.readObject();
+				ois.close();
+			}
+    	} catch (IOException e) {
+			Trace.error("Error when reading master file");
+		} catch (ClassNotFoundException e) {
+			Trace.error("NO");
+		}
+    }
+    
+    private void checkRecover() {
+    	HashMap<Integer, Integer> toFix = getIncompleteTxns();
+    	for(Map.Entry<Integer, Integer> e: toFix.entrySet()) {
+    		int id = e.getKey();
+    		int status = e.getValue();
+    		if (status == TXN_TO_ABORT) {
+    			Trace.info("Recovery: Informing MW that txn " + id + " should be aborted...");
+    			// Tell the middleware this should be aborted
+    			callToMiddleware(id, status);
+    			
+    			// Just to make sure, delete the .next file (maybe we crashed in
+    			// the middle of writing it)
+    			deleteNextVersion(id);
+    		} else if (status == TXN_TO_CONFIRM) {
+    			Trace.info("Recovery: Asking MW for status of " + id + "...");
+    			
+    			boolean result = callToMiddleware(id, status);
+    			if (result) {
+    				Trace.info("Status was commit.");
+    				commitIncompleteTxn(id);
+    			} else {
+    				// Abort. Since we're recovering, we have nothing in memory
+    				// for this transaction. Further, if the decision was abort,
+    				// there's no way we wrote anything to the master. Therefore,
+    				// we just have to delete the next version.
+    				Trace.info("Status was abort.");
+    				deleteNextVersion(id);
+    			}
+    		}
+    		
+    		Trace.info("Recovery completed for txn" + id);
+    		
+    	}
+    }
+    
+    private boolean callToMiddleware(int id, int status) {
+    	// We can't use a proxy here because that would introduce a circular dependency
+    	// between the MW and the RM. Therefore, we settle on the horribleness below.
+    	String soapTemplate =
+    		"<S:Envelope xmlns:S=\"http://schemas.xmlsoap.org/soap/envelope/\" " + 
+    				"xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+				"<SOAP-ENV:Header/>" +
+				"<S:Body>" +
+					"<ns2:%METHOD% xmlns:ns2=\"http://ws.server/\">" +
+						"<arg0>%ID%</arg0><arg1>%WHENCE%</arg1>" +
+					"</ns2:%METHOD%>" +
+				"</S:Body>" +
+			"</S:Envelope>";
+    	
+    	boolean result = true;
+    	
+    	String soapContent = soapTemplate.replace("%ID%", Integer.toString(id))
+    		.replace("%METHOD%", status == TXN_TO_ABORT ? "signalCrash" : "queryTxnResult")
+    		.replace("%WHENCE%", Integer.toString(thisRmIndex));
+    	byte[] b = soapContent.getBytes();
+    	
+    	try {
+    		// Most of this code is taken from https://goo.gl/pxrCB7
+    		
+    		URL mw = new URL("http", mwHostname, mwPort, "/" + mwServiceName + "/service");
+    		HttpURLConnection huc = (HttpURLConnection) mw.openConnection();
+    		
+    		// Sending the request...
+    		String SOAPAction = "http://" + mwHostname + ":" + mwPort + "/" + mwServiceName + "/service";
+			huc.setRequestProperty("Content-Length", String.valueOf(b.length));
+			huc.setRequestProperty("Content-Type", "text/xml; charset=utf-8");
+			huc.setRequestProperty("SOAPAction", SOAPAction);
+			huc.setRequestMethod("POST");
+			huc.setDoOutput(true);
+			huc.setDoInput(true);
+			OutputStream out = huc.getOutputStream();
+			//Write the content of the request to the outputstream of the HTTP Connection.
+			out.write(b);
+			out.close();
+			
+			// Getting the response...
+			InputStreamReader isr = new InputStreamReader(huc.getInputStream());
+			BufferedReader in = new BufferedReader(isr);
+
+			String responseString = "", outputString = "";
+			while ((responseString = in.readLine()) != null) {
+				outputString = outputString + responseString;
+			}
+			
+			if (status == TXN_TO_CONFIRM) {
+				int e = outputString.indexOf("</return>");
+				int s = outputString.lastIndexOf('>', e);
+				
+				String retval = outputString.substring(s + 1, e);
+				result = Boolean.parseBoolean(retval);
+			}
+			
+			huc.disconnect();
+			
+    	} catch (Exception e) {
+    		Trace.error("I give up.");
+    	}
+    	
+    	return result;
+    }
+    
+    private void commitIncompleteTxn(int id) {
+    	// Load the data from .next
+    	try {
+    		ObjectInputStream ois = new ObjectInputStream(
+    									new FileInputStream("data/" + thisRmName + "." + id + ".next"));
+    		
+    		RMHashtable toWrite = (RMHashtable) ois.readObject();
+    		HashSet<Integer> toDelete = (HashSet<Integer>) ois.readObject();
+
+    		ois.close();
+    		
+    		for(Integer delId: toDelete) {
+    			m_itemHT.remove(delId);
+    		}
+    		
+    		for (Enumeration e = toWrite.keys(); e.hasMoreElements();) {
+    			Object key = e.nextElement();
+    			m_itemHT.put(key, toWrite.get(key));
+    		}
+    		
+    		List<Object> objects = new ArrayList<>();
+            objects.add(m_itemHT);
+
+			persistData(objects);
+
+            deleteNextVersion(id);
+    		
+    	} catch (FileNotFoundException e) {
+    		Trace.error("Data could not be read from .next file.");
+    	} catch (IOException e) {
+    		Trace.error("Error when reading master file");
+    	} catch (ClassNotFoundException e) {
+    		Trace.error("Just no.");
+    	}
+    }
+    
+    private HashMap<Integer, Integer> getIncompleteTxns() {
+    	// Records incomplete transactions, with their results (unknown, true [commit], false [abort])
+		HashMap<Integer, Integer> incomplete = new HashMap<Integer, Integer>();
+    	BufferedReader logFile;
+		try
+		{
+			// TODO unhardcode
+			logFile = new BufferedReader(new FileReader("logs/2PC_" + thisRmName + ".log"));
+		}
+		catch (FileNotFoundException e)
+		{
+			Trace.info("No 2PC log found...");
+			// File doesn't exist, we don't have to go further.
+			return incomplete;
+		}
+		
+		HashSet<Integer> trackAbort = new HashSet<Integer>();
+    	String lead = "[2PC][" + thisRmName + "] ";
+    	try {
+			String line;
+			while ((line = logFile.readLine()) != null) {
+				line = line.replace(lead, "");
+				String[] entry = line.split(" ");
+				int id = Integer.parseInt(entry[1]);
+				String op = entry[0];
+
+				switch (op) {
+					case "operation":
+						// If we have just operations and no vote, 
+						// then we need to tell the middleware to abort
+						incomplete.put(id, TXN_TO_ABORT);
+						break;
+					case "vote":
+						// If we have a vote, then we should check if it was yes or no.
+						// If it was no then we're fine - no matter what happened on our
+						// side, the txn aborted. If it was yes, then we potentially need
+						// to confirm (if we never recieved a result from the mw)
+						boolean result = Boolean.parseBoolean(entry[2]);
+						if (result)
+							incomplete.put(id, TXN_TO_CONFIRM);
+						else
+							// Potentially we'll need to delete a .next for this, but
+							// wait to see if maybe the txn ended normally first.
+							trackAbort.add(id);
+						break;
+					case "end":
+						incomplete.remove(id);
+						trackAbort.remove(id);
+						break;
+					default:
+						Trace.info("Unknown log entry " + line);
+						break;
+				}
+			}
+			
+			// This set contains any txn id that crashed before receiving a confirmation,
+			// but after successfully sending an abort. Therefore we know that the MW
+			// knows that the txn needed to abort.
+			for(Integer id: trackAbort) {
+				deleteNextVersion(id);
+			}
+
+			// Get rid of the old log file, we don't need it anymore
+			logFile.close();
+			Files.delete(Paths.get("logs/2PC_" + thisRmName + ".log"));
+			
+		} catch (Exception e) {
+			// do nothing
+		}
+		
+		return incomplete;
+    }
+    
+    private void deleteNextVersion(int id) {
+    	try {
+			Files.deleteIfExists(Paths.get("data/" + thisRmName + "." + id + ".next"));
+		} catch (IOException e) {
+			//Technically this isn't really problematic.
+			e.printStackTrace();
+		}
+    }
     
     // Basic operations on RMItem //
 
@@ -25,6 +335,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
      */
     private RMItem readData(int id, String key) {
         synchronized(bidon) {
+            restartTTL(id);
+
             RMItem item = null;
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
@@ -62,20 +374,94 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     // Abort a transaction.
     public boolean abort(int id) {
-        synchronized(bidon) {
-            _temporaryOperations.remove(id);
-            return true;
+        if (_isSetDie_afterdecide) {
+            System.exit(-1);
         }
+
+        synchronized(bidon) {
+            killTTL(id);
+            _temporaryOperations.remove(id);
+        }
+        
+        deleteNextVersion(id);
+
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
+		
+		return true;
+    }
+
+    @Override
+    public boolean prepare(int id) {
+        if (_isSetDie_beforevote) {
+            selfDestruct();
+        }
+
+    	RMHashtable next_write = new RMHashtable();
+    	HashSet<String> next_remove = new HashSet<String>();
+    	
+    	boolean result = true;
+    	
+        LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
+
+        // If there are no operations when we are asked to prepare, something went wrong.
+        // Indeed, we shouldn't be asked to prepare if only read operations were performed,
+        // so we should tell the MW that our data was somehow lost.
+        if (operations == null) {
+            cancelTTL(id);
+            Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + false, true);
+            return false;
+        }
+
+        Iterator<ClientOperation> it = operations.iterator();
+
+        while (it.hasNext()) {
+            ClientOperation op = it.next();
+
+            switch (op.getOperationType()) {
+                case WRITE:
+                    next_write.put(op.getKey(), op.getItem());
+                    break;
+                case DELETE:
+                	// In next_write, we only want the latest version of the things
+                	// we'll write. So something that gets deleted shouldn't be in there
+                	// (This could happen if we did w(x), d(x), commit)
+                	next_write.remove(op.getKey());
+                	next_remove.add(op.getKey());
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        List<Object> objects = new ArrayList<>();
+        objects.add(next_write);
+        objects.add(next_remove);
+
+        boolean isPersisted = Trace.persist("data/" + thisRmName + "." + id + ".next", objects, false);
+
+        if (!isPersisted) {
+        	result = false;
+        }
+        
+    	// This trace will need to occur AFTER we wrote the data to disk
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " vote " + id + " " + result, true);
+
+        if (result) cancelTTL(id);
+    	return result;
     }
 
     // Commit a transaction.
     public boolean commit(int id) {
-        synchronized(bidon) {
+        if (_isSetDie_afterdecide) {
+            System.exit(-1);
+        }
 
+        synchronized(bidon) {
+            killTTL(id);
             LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
             if (operations == null) {
-                Trace.info("No transactions were done: nothing to commit.");
+                Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
                 return true;
             }
 
@@ -97,8 +483,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
 
             _temporaryOperations.remove(id);
-            return true;
+
+            List<Object> objects = new ArrayList<>();
+            objects.add(m_itemHT);
+
+           persistData(objects);
+
+            deleteNextVersion(id);
         }
+
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " end " + id, true);
+        return true;
     }
     
     // Basic operations on ReservableItem //
@@ -472,6 +867,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
                         + reservedItem.getKey() + " reserved/available = " 
                         + item.getReserved() + "/" + item.getCount());
+                synchronized(bidon) {
+                    addTemporaryOperation(id, item.getKey(), item, ClientOperation.Type.WRITE);
+                }
+                
             }
             // Remove the customer from the storage.
             removeData(id, cust.getKey());
@@ -536,19 +935,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         boolean isReserved = reserveItem(id, customerId, Room.getKey(location), location);
         return isReserved;
     }
-    
-
-    // Reserve an itinerary.
-    
-    public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
-                                    String location, boolean car, boolean room) {
-        return false;
-    }
-
-    public int start() {
-        //dummy implementation
-        return -1;
-    }
 
 	public boolean checkCustomerExistence(int id, int customerId) {
 		Trace.info("RM::checkCustomerExistence(" + id + ", " + customerId + ") called.");
@@ -559,18 +945,48 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 	
 	public boolean shutdown() {
-		Timer end = new Timer();
-		end.schedule(new TimerTask() {
+		Util.System.shutInstance(0);
+		return true;
+	}
 
-			@Override
-			public void run() {
-				System.exit(0);
-			} 
-		}, 1000);
+    @Override
+    public boolean isStillActive(int id) {
+        return restartTTL(id);
+    }
+
+    public boolean setDie(String which, String when) {
+        boolean isSetToDie = true;
+
+        switch (when) {
+        case "beforevote":
+            _isSetDie_beforevote = true;
+            break;
+        case "afterdecide":
+            _isSetDie_afterdecide = true;
+            break;
+        default:
+            Trace.info("Invalid moment for a setDie");
+            isSetToDie = false;
+        }
+
+        return isSetToDie;
+    }
+
+	public boolean resetDie() {
+		_isSetDie_beforevote = false;
+		_isSetDie_afterdecide = false;
 		return true;
 	}
 
     private void addTemporaryOperation(int id, String key, RMItem value, ClientOperation.Type operationType) {
+        TTL ttl = _ttls.get(id);
+        if (ttl == null) {
+            ttl = new TTL(id, this, TIME_TO_LIVE);
+            _ttls.put(id, ttl);
+        } else {
+            ttl.restart();
+        }
+
         LinkedList<ClientOperation> operations = _temporaryOperations.get(id);
 
         if (operations == null) {
@@ -579,6 +995,50 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         operations.addLast(new ClientOperation(key, value, operationType));
         _temporaryOperations.put(id, operations);
+        
+        // This log is so that we know if we lost data during a crash.
+        Trace.persist("logs/2PC_" + thisRmName + ".log", "[2PC][" + thisRmName + "]" + " operation " + id, true);
     }
 
+    private boolean killTTL(int id) {
+        boolean isCancelled = cancelTTL(id);
+        if (isCancelled) {
+            _ttls.remove(id);
+        }
+        return isCancelled;
+    }
+
+    private boolean cancelTTL(int id) {
+        boolean isCancelled = false;
+        TTL ttl = _ttls.get(id);
+        if (ttl != null) {
+            ttl.kill();
+            isCancelled = true;
+        }
+        return isCancelled;
+    }
+
+    private boolean restartTTL(int id) {
+        boolean isRestarted = false;
+        TTL ttl = _ttls.get(id);
+        if (ttl != null) {
+            ttl.restart();
+            isRestarted = true;
+        }
+        return isRestarted;
+    }
+
+	private boolean persistData(List<Object> objects) {
+		Trace.persist("data/" + thisRmName + ".master2", objects, false);
+
+		try {
+			Files.deleteIfExists(Paths.get("data/" + thisRmName + ".master"));
+			File master2 = new File("data/" + thisRmName + ".master2");
+			master2.renameTo(new File("data/" + thisRmName + ".master"));
+		} catch (IOException e) {
+			//couldn't delete .master
+		}
+
+		return true;
+	}
 }

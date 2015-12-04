@@ -74,6 +74,12 @@ public class WSClient {
             return 25;
         else if (argument.compareToIgnoreCase("shutdown") == 0)
             return 26;
+        else if (argument.compareToIgnoreCase("crash") == 0)
+            return 27;
+        else if (argument.compareToIgnoreCase("setdie") == 0)
+            return 28;
+        else if (argument.compareToIgnoreCase("resetdie") == 0)
+            return 29;
         else
             return 666;
     }

@@ -1,7 +1,6 @@
 package client;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -444,6 +443,15 @@ public class Transaction {
         	{
         		result =  "false";
         	}
+        	break;
+        case 27:
+        	result = String.valueOf(proxy.crash(arguments.get(0)));
+        	break;
+        case 28:
+        	result = String.valueOf(proxy.setDie(arguments.get(0), arguments.get(1)));
+        	break;
+        case 29:
+        	result = String.valueOf(proxy.resetDie());
         	break;
         default:
             System.out.println("Warning: unsupported command " + command);

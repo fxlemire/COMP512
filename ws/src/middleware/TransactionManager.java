@@ -1,7 +1,10 @@
 package middleware;
 
+import Util.TTL;
+import Util.Trace;
 import middleware.LockManager.LockManager;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class TransactionManager {
@@ -10,12 +13,14 @@ public class TransactionManager {
     public final static int CAR = 2;
     public final static int ROOM = 3;
 
-    private final Object _bidon = new Object();
     private HashMap<Integer, boolean[]> _currentTransactions = new HashMap<Integer, boolean[]>();
     private HashMap<Integer, TTL> _ttls = new HashMap<Integer, TTL>();
+    private HashMap<Integer, Boolean> _transactionResults = new HashMap<Integer, Boolean>();
     private int _transactionId = 0;
+    private ResourceManagerImpl _mw;
     private static boolean _isInstantiated = false;
     private static TransactionManager tm = null;
+    private static final int TIME_TO_LIVE = 180;
 
     private TransactionManager() { }
 
@@ -27,24 +32,38 @@ public class TransactionManager {
         return tm;
     }
 
-    public int start(ResourceManagerImpl rm) {
-        synchronized(_bidon) {
-            int transactionId = _transactionId++;
-            _currentTransactions.put(transactionId, new boolean[4]);
-            _ttls.put(transactionId, new TTL(transactionId, rm, 60));
-            return transactionId;
-        }
+    public void setMiddleware(ResourceManagerImpl mw) {
+        _mw = mw;
     }
 
-    public boolean commit(int id, LockManager lockManager) {
+    public synchronized int start(ResourceManagerImpl rm) {
+        int transactionId = _transactionId++;
+        _currentTransactions.put(transactionId, new boolean[4]);
+        _ttls.put(transactionId, new TTL(transactionId, rm, TIME_TO_LIVE));
+        return transactionId;
+    }
+
+    public synchronized boolean commit(int id, LockManager lockManager) {
+    	_transactionResults.put(id, true);
         return unlockId(id, lockManager);
     }
 
-    public boolean abort(int id, LockManager lockManager) {
-        return unlockId(id, lockManager);
+    public synchronized boolean abort(int id, LockManager lockManager) {
+    	_transactionResults.put(id, false);
+    	return unlockId(id, lockManager);
+    }
+    
+    public synchronized boolean getTransactionResult(int id) {
+    	if (_transactionResults.containsKey(id)) {
+    		return _transactionResults.get(id);
+    	}
+    	
+    	// If we don't know about a given transaction, don't take any chances and say it
+    	// was aborted.
+    	return false;
     }
 
-    public boolean hasValidId(int id) {
+    public synchronized boolean hasValidId(int id) {
         boolean isValid = id < _transactionId && _currentTransactions.containsKey(id);
         if (isValid) {
             TTL ttl = _ttls.get(id);
@@ -55,7 +74,7 @@ public class TransactionManager {
         return isValid;
     }
 
-    public boolean addTransactionRM(int id, int rm) {
+    public synchronized boolean addTransactionRM(int id, int rm) {
         boolean isUpdated = false;
         boolean[] rmsUsed = _currentTransactions.get(id);
 
@@ -65,27 +84,47 @@ public class TransactionManager {
             isUpdated = true;
         }
 
+        Trace.persist("logs/2PC_mw.log", "[2PC][mw] participate " + id + " " + rm, true);
         return isUpdated;
     }
+    
+    /* This will be used when a RM crashes in the middle of a transaction,
+     * and thus doesn't "participate" in it anymore. */
+    public synchronized boolean removeTransactionRM(int id, int rm) {
+    	boolean[] rmsUsed = _currentTransactions.get(id);
 
-    public boolean[] getRMsUsed(int id) {
-        return _currentTransactions.get(id);
+        if (rmsUsed != null) {
+            rmsUsed[rm] = false;
+            _currentTransactions.put(id, rmsUsed);
+        }
+        
+        return true;
     }
 
-    private boolean unlockId(int id, LockManager lockManager) {
-        synchronized(_bidon) {
-            boolean isUnlocked = lockManager.UnlockAll(id);
+    public synchronized boolean[] getRMsUsed(int id) {
+    	// Return a copy to prevent modifications from outside the synchronized block
+        return Arrays.copyOf(_currentTransactions.get(id), 4);
+    }
 
-            if (isUnlocked) {
-                TTL ttl = _ttls.get(id);
-                if (ttl != null) {
-                    ttl.kill();
-                    _ttls.remove(id);
-                }
-                _currentTransactions.remove(id);
-            }
-
-            return isUnlocked;
+    public synchronized void sendHeartBeat(int id) {
+        boolean[] rmsUsed = _currentTransactions.get(id);
+        if (rmsUsed != null) {
+            _mw.sendHeartBeat(id, rmsUsed);
         }
+    }
+
+    private synchronized boolean unlockId(int id, LockManager lockManager) {
+        boolean isUnlocked = lockManager.UnlockAll(id);
+
+        if (isUnlocked) {
+            TTL ttl = _ttls.get(id);
+            if (ttl != null) {
+                ttl.kill();
+                _ttls.remove(id);
+            }
+            _currentTransactions.remove(id);
+        }
+
+        return isUnlocked;
     }
 }

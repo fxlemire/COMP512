@@ -1,0 +1,4 @@
+%1,start
+setdie,mw,afterdecide_none
+newcustomer,%1
+commit,%1

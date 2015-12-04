@@ -6,8 +6,7 @@ RATE=$2
 NTXN=`echo "1000/$NCLI" | bc` # How many transactions per client?
 NCLI=`echo "$NCLI-1" | bc` # For proper iteration below
 
-# Clear and recreate data
-rm data/*
+# Recreate the data
 ant autoclient -Dautocli.ntxn=-1 -Dautocli.txnfile=./autoruns/xcli_create.txt -Dautocli.mode=seq
 
 # Assume that the MW and RMs are already running.

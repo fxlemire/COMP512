@@ -285,7 +285,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 				try {
 					proxy.commit(id);
 					if (_isSetDie_afterdecide_some) {
-						selfDestruct();
+						System.exit(-1);
 					}
 				} catch (Exception e) {
 					//do nothing
@@ -306,7 +306,7 @@ public class ResourceManagerImpl extends server.ws.ResourceManagerAbstract {
 			public void run(ResourceManager proxy) {
 				result[0] = result[0] && proxy.prepare(id);
 				if (_isSetDie_aftervote_some) {
-					selfDestruct();
+					System.exit(-1);
 				}
 			}
 		};
